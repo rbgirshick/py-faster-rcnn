@@ -133,6 +133,7 @@ def train_model(solver_def_path, window_db_path, pretrained_model=None,
 
 def train_model_random_scales(solver_def_path, window_db_path,
                               pretrained_model=None, GPU_ID=None):
+    IMAGES_PER_BATCH = 4
     solver, window_db = \
         load_solver_and_window_db(solver_def_path,
                                   window_db_path,
@@ -142,17 +143,15 @@ def train_model_random_scales(solver_def_path, window_db_path,
     if GPU_ID is not None:
         caffe.set_device(GPU_ID)
 
-    # TODO(rbg): fix this temp hack
-    window_db = window_db[0:5008]
-
     max_epochs = 100
-    dp = DeepPyramid(solver.net)
     for epoch in xrange(max_epochs):
-        # TODO(rbg): shuffle window_db
-        for db_i in xrange(0, len(window_db), 4):
+        shuffled_inds = np.random.permutation(np.arange(len(window_db)))
+        lim = (len(shuffled_inds) / IMAGES_PER_BATCH) * IMAGES_PER_BATCH
+        shuffled_inds = shuffled_inds[0:lim]
+        for shuffled_i in xrange(0, len(shuffled_inds), 4):
             start_t = time.time()
-
-            minibatch_db = window_db[db_i:db_i + 4]
+            db_inds = shuffled_inds[shuffled_i:shuffled_i + 4]
+            minibatch_db = [window_db[i] for i in db_inds]
             im_blob, rois_blob, labels_blob = \
                 finetuning.get_minibatch(minibatch_db)
 
@@ -164,11 +163,14 @@ def train_model_random_scales(solver_def_path, window_db_path,
             solver.net.blobs['rois'].reshape(num_rois, 5, 1, 1)
             solver.net.blobs['labels'].reshape(num_rois, 1, 1, 1)
             # Copy data into net's input blobs
-            solver.net.blobs['data'].data[...] = im_blob
+            solver.net.blobs['data'].data[...] = \
+                im_blob.astype(np.float32, copy=False)
             solver.net.blobs['rois'].data[...] = \
-                rois_blob[:, :, np.newaxis, np.newaxis]
+                rois_blob[:, :, np.newaxis, np.newaxis] \
+                .astype(np.float32, copy=False)
             solver.net.blobs['labels'].data[...] = \
-                labels_blob[:, np.newaxis, np.newaxis, np.newaxis]
+                labels_blob[:, np.newaxis, np.newaxis, np.newaxis] \
+                .astype(np.float32, copy=False)
 
             # print 'epoch {:d} image {:d}'.format(epoch, db_i)
             # print_label_stats(labels_blob)

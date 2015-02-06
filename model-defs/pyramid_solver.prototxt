@@ -1,4 +1,4 @@
-train_net: "model-defs/pyramid_fcs_only.prototxt"
+train_net: "model-defs/pyramid.prototxt"
 #test_iter: 100
 #test_interval: 1000
 base_lr: 0.001
@@ -11,4 +11,4 @@ max_iter: 500000
 momentum: 0.9
 weight_decay: 0.0005
 snapshot: 10000
-snapshot_prefix: "snapshots/pyramid_finetune_fcs_only"
+snapshot_prefix: "snapshots/pyramid_finetune"
