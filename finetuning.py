@@ -20,22 +20,31 @@ def sample_rois(labels, overlaps, rois, fg_rois_per_image, rois_per_image):
       overlaps (1d np array)
       rois (2d np array)
     """
-    # Select foreground ROIs
+    # Select foreground ROIs as those with >= FG_THRESH overlap
     fg_inds = np.where(overlaps >= conf.FG_THRESH)[0]
+    # Guard against the case when an image has fewer than fg_rois_per_image
+    # foreground ROIs
     fg_rois_per_this_image = np.minimum(fg_rois_per_image, fg_inds.size)
+    # Sample foreground regions without replacement
     fg_inds = np.random.choice(fg_inds, size=fg_rois_per_this_image,
                                replace=False)
-    # Select background ROIs
+
+    # Select background ROIs as those within [BG_THRESH_LO, BG_THRESH_HI)
     bg_inds = np.where((overlaps < conf.BG_THRESH_HI) &
                        (overlaps >= conf.BG_THRESH_LO))[0]
+    # Compute number of background ROIs to take from this image (guarding
+    # against there being fewer than desired)
     bg_rois_per_this_image = rois_per_image - fg_rois_per_this_image
     bg_rois_per_this_image = np.minimum(bg_rois_per_this_image,
                                         bg_inds.size)
+    # Sample foreground regions without replacement
     bg_inds = np.random.choice(bg_inds, size=bg_rois_per_this_image,
                                replace=False)
+    # The indices that we're taking (both fg and bg)
     keep_inds = np.append(fg_inds, bg_inds)
-    labels[bg_inds] = 0
     labels = labels[keep_inds]
+    # Clamp labels for the background ROIs to 0
+    labels[fg_rois_per_this_image:] = 0
     overlaps = overlaps[keep_inds]
     rois = rois[keep_inds]
     return labels, overlaps, rois
@@ -55,13 +64,13 @@ def get_image_blob(window_db, scale_inds, do_flip):
         im = im.astype(np.float32, copy=False)
         im -= conf.PIXEL_MEANS
         im_shape = im.shape
-        im_size = np.min(im_shape[0:2])
-        im_size_big = np.max(im_shape[0:2])
+        im_size_min = np.min(im_shape[0:2])
+        im_size_max = np.max(im_shape[0:2])
         target_size = conf.SCALES[scale_inds[i]]
-        im_scale = float(target_size) / float(im_size)
+        im_scale = float(target_size) / float(im_size_min)
         # Prevent the biggest axis from being more than MAX_SIZE
-        if np.round(im_scale * im_size_big) > conf.MAX_SIZE:
-            im_scale = float(conf.MAX_SIZE) / float(im_size_big)
+        if np.round(im_scale * im_size_max) > conf.MAX_SIZE:
+            im_scale = float(conf.MAX_SIZE) / float(im_size_max)
         im = cv2.resize(im, None, None, fx=im_scale, fy=im_scale,
                         interpolation=cv2.INTER_LINEAR)
         im_scale_factors.append(im_scale)
@@ -80,12 +89,15 @@ def get_image_blob(window_db, scale_inds, do_flip):
     return blob, im_scale_factors
 
 def map_im_rois_to_feat_rois(im_rois, im_scale_factor):
+    """Map a ROI in image-pixel coordinates to a ROI in feature coordinates.
+    """
     feat_rois = np.round(im_rois * im_scale_factor / conf.FEAT_STRIDE)
     return feat_rois
 
 def get_minibatch(window_db, random_flip=False):
     # Decide to flip the entire batch or not
     do_flip = False if not random_flip else bool(np.random.randint(0, high=2))
+    # Temp debug assertion
     assert(not do_flip)
     num_images = len(window_db)
     # Sample random scales to use for each image in this batch
