@@ -92,7 +92,8 @@ def get_minibatch(window_db, random_flip=False):
     random_scale_inds = \
         np.random.randint(0, high=len(conf.SCALES), size=num_images)
     assert(conf.BATCH_SIZE % num_images == 0), \
-        'num_images must divide BATCH_SIZE'
+        'num_images ({}) must divide BATCH_SIZE ({})'.format(num_images,
+                                                             conf.BATCH_SIZE)
     rois_per_image = conf.BATCH_SIZE / num_images
     fg_rois_per_image = np.round(conf.FG_FRACTION * rois_per_image)
     # Get the input blob, formatted for caffe
@@ -119,8 +120,8 @@ def get_minibatch(window_db, random_flip=False):
         assert((feat_rois[:, 2] >= feat_rois[:, 0]).all())
         assert((feat_rois[:, 3] >= feat_rois[:, 1]).all())
         assert((feat_rois >= 0).all())
-        assert((feat_rois < np.max(im_blob.shape[2:4]) *
-                            im_scale_factors[im_i] / conf.FEAT_STRIDE).all())
+        # assert((feat_rois < np.max(im_blob.shape[2:4]) *
+        #                     im_scale_factors[im_i] / conf.FEAT_STRIDE).all())
         rois_blob_this_image = \
             np.append(im_i * np.ones((feat_rois.shape[0], 1)), feat_rois,
                       axis=1)

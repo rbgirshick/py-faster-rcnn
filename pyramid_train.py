@@ -24,6 +24,7 @@ import cv2
 import time
 import matplotlib.pyplot as plt
 import finetuning
+import fast_rcnn_config as conf
 from keyboard import keyboard
 
 def print_label_stats(labels):
@@ -133,7 +134,6 @@ def train_model(solver_def_path, window_db_path, pretrained_model=None,
 
 def train_model_random_scales(solver_def_path, window_db_path,
                               pretrained_model=None, GPU_ID=None):
-    IMAGES_PER_BATCH = 4
     solver, window_db = \
         load_solver_and_window_db(solver_def_path,
                                   window_db_path,
@@ -146,11 +146,11 @@ def train_model_random_scales(solver_def_path, window_db_path,
     max_epochs = 100
     for epoch in xrange(max_epochs):
         shuffled_inds = np.random.permutation(np.arange(len(window_db)))
-        lim = (len(shuffled_inds) / IMAGES_PER_BATCH) * IMAGES_PER_BATCH
+        lim = (len(shuffled_inds) / conf.IMS_PER_BATCH) * conf.IMS_PER_BATCH
         shuffled_inds = shuffled_inds[0:lim]
-        for shuffled_i in xrange(0, len(shuffled_inds), 4):
+        for shuffled_i in xrange(0, len(shuffled_inds), conf.IMS_PER_BATCH):
             start_t = time.time()
-            db_inds = shuffled_inds[shuffled_i:shuffled_i + 4]
+            db_inds = shuffled_inds[shuffled_i:shuffled_i + conf.IMS_PER_BATCH]
             minibatch_db = [window_db[i] for i in db_inds]
             im_blob, rois_blob, labels_blob = \
                 finetuning.get_minibatch(minibatch_db)
@@ -180,10 +180,14 @@ def train_model_random_scales(solver_def_path, window_db_path,
 
 
 if __name__ == '__main__':
-    CAFFE_MODEL = '/data/reference_caffe_nets/ilsvrc_2012_train_iter_310k'
-    SOLVER_DEF = './model-defs/pyramid_solver.prototxt'
+    # CAFFE_MODEL = '/data/reference_caffe_nets/ilsvrc_2012_train_iter_310k'
+    # SOLVER_DEF = './model-defs/pyramid_solver.prototxt'
+    CAFFE_MODEL = '/data/reference_caffe_nets/VGG_ILSVRC_16_layers.caffemodel'
+    SOLVER_DEF = './model-defs/vgg16_solver.prototxt'
+    # CAFFE_MODEL = '/data/reference_caffe_nets/bvlc_googlenet.caffemodel'
+    # SOLVER_DEF = './model-defs/googlenet_solver.prototxt'
     WINDOW_DB = './data/window_file_voc_2007_trainval.txt.pz'
-    GPU_ID = 0
+    GPU_ID = 0 if len(sys.argv) == 1 else int(sys.argv[1])
     train_model_random_scales(SOLVER_DEF, WINDOW_DB,
                               pretrained_model=CAFFE_MODEL,
                               GPU_ID=GPU_ID)

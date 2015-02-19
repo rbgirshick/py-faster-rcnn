@@ -1,9 +1,9 @@
 name: "CaffeNet"
 input: "data"
-input_dim: 7
+input_dim: 1
 input_dim: 3
-input_dim: 1713
-input_dim: 1713
+input_dim: 227
+input_dim: 227
 input: "rois"
 input_dim: 1 # to be changed on-the-fly
 input_dim: 5 # [level, x1, y1, x2, y2] zero-based indexing
@@ -270,4 +270,8 @@ layers {
   type: SOFTMAX_LOSS
   bottom: "fc8_pascal"
   bottom: "labels"
+  top: "loss"
+  #softmax_param {
+  #  margin: 1
+  #}
 }

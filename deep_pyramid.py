@@ -51,7 +51,7 @@ class DeepPyramid(object):
         return caffe_input
 
     def get_feat_pyramid(self, im):
-        im_pyra = self.get_image_pyramid(im)
+        im_pyra, _ = self.get_image_pyramid(im)
         feat_pyra = []
         for i in xrange(self.num_levels):
             caffe_input = im_pyra[i].astype(np.float32)
@@ -69,7 +69,7 @@ class DeepPyramid(object):
         return feat_pyra
 
     def get_feat_pyramid_batch(self, im):
-        im_pyra = self.get_image_pyramid(im)
+        im_pyra, _ = self.get_image_pyramid(im)
         caffe_input = self.image_pyramid_to_batch(im_pyra)
         base_shape = im_pyra[0].shape
         self.net.blobs['data'].reshape(self.num_levels, base_shape[2],
