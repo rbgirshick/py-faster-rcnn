@@ -4,7 +4,22 @@ import matplotlib.pyplot as plt
 import fast_rcnn_config as conf
 from keyboard import keyboard
 
-def sample_rois(labels, overlaps, rois, fg_rois_per_image, rois_per_image):
+def get_bbox_regression_labels(bbox_target_data):
+    # Return (N, K * 4, 1, 1) blob of regression targets
+    # Return (N, K * 4, 1, 1) blob of Euclidean loss weights
+    clss = bbox_target_data[:, 0]
+    bbox_targets = np.zeros((clss.size, 4 * conf.NUM_CLASSES), dtype=np.float32)
+    bbox_loss_weights = np.zeros(bbox_targets.shape, dtype=np.float32)
+    inds = np.where(clss > 0)[0]
+    for ind in inds:
+        cls = clss[ind]
+        start = 4 * cls
+        end = start + 4
+        bbox_targets[ind, start:end] = bbox_target_data[ind, 1:]
+        bbox_loss_weights[ind, start:end] = [1., 1., 1., 1.]
+    return bbox_targets, bbox_loss_weights
+
+def sample_rois(window_db, do_flip, fg_rois_per_image, rois_per_image):
     """Generate a random sample of ROIs comprising foreground and background
     examples.
 
@@ -20,6 +35,13 @@ def sample_rois(labels, overlaps, rois, fg_rois_per_image, rois_per_image):
       overlaps (1d np array)
       rois (2d np array)
     """
+    # (labels, overlaps, x1, y1, x2, y2)
+    labels = window_db['windows'][:, 0]
+    overlaps = window_db['windows'][:, 1]
+    rois = window_db['windows'][:, 2:]
+    if do_flip:
+        rois[:, (0, 2)] = window_db['width'] - rois[:, (2, 0)] - 1
+
     # Select foreground ROIs as those with >= FG_THRESH overlap
     fg_inds = np.where(overlaps >= conf.FG_THRESH)[0]
     # Guard against the case when an image has fewer than fg_rois_per_image
@@ -47,7 +69,9 @@ def sample_rois(labels, overlaps, rois, fg_rois_per_image, rois_per_image):
     labels[fg_rois_per_this_image:] = 0
     overlaps = overlaps[keep_inds]
     rois = rois[keep_inds]
-    return labels, overlaps, rois
+    bbox_targets, bbox_loss_weights = \
+        get_bbox_regression_labels(window_db['bbox_targets'][keep_inds, :])
+    return labels, overlaps, rois, bbox_targets, bbox_loss_weights
 
 def get_image_blob(window_db, scale_inds, do_flip):
     """Build an input blob from the images in the window db at the specified
@@ -115,18 +139,15 @@ def get_minibatch(window_db, random_flip=False):
     # Now, build the region of interest and label blobs
     rois_blob = np.zeros((0, 5), dtype=np.float32)
     labels_blob = np.zeros((0), dtype=np.float32)
+    bbox_targets_blob = np.zeros((0, 4 * conf.NUM_CLASSES), dtype=np.float32)
+    bbox_loss_weights_blob = np.zeros(bbox_targets_blob.shape, dtype=np.float32)
     all_overlaps = []
     for im_i in xrange(num_images):
-        # (labels, overlaps, x1, y1, x2, y2)
-        labels = window_db[im_i]['windows'][:, 0]
-        overlaps = window_db[im_i]['windows'][:, 1]
-        im_rois = window_db[im_i]['windows'][:, 2:]
-        if do_flip:
-            im_rois[:, (0, 2)] = window_db[im_i]['width'] - \
-                                 im_rois[:, (2, 0)] - 1
-        labels, overlaps, im_rois = sample_rois(labels, overlaps, im_rois,
-                                                fg_rois_per_image,
-                                                rois_per_image)
+        labels, overlaps, im_rois, bbox_targets, bbox_loss_weights \
+            = sample_rois(window_db[im_i],
+                          do_flip,
+                          fg_rois_per_image,
+                          rois_per_image)
         feat_rois = map_im_rois_to_feat_rois(im_rois, im_scale_factors[im_i])
         # Assert various bounds
         assert((feat_rois[:, 2] >= feat_rois[:, 0]).all())
@@ -139,9 +160,13 @@ def get_minibatch(window_db, random_flip=False):
                       axis=1)
         rois_blob = np.append(rois_blob, rois_blob_this_image, axis=0)
         labels_blob = np.append(labels_blob, labels, axis=0)
+        bbox_targets_blob = np.append(bbox_targets_blob, bbox_targets, axis=0)
+        bbox_loss_weights_blob = \
+            np.append(bbox_loss_weights_blob, bbox_loss_weights, axis=0)
         all_overlaps = np.append(all_overlaps, overlaps, axis=0)
     # vis_minibatch(im_blob, rois_blob, labels_blob, all_overlaps)
-    return im_blob, rois_blob, labels_blob
+    return im_blob, rois_blob, labels_blob, \
+           bbox_targets_blob, bbox_loss_weights_blob
 
 def vis_minibatch(im_blob, rois_blob, labels_blob, overlaps):
     num_images = im_blob.shape[0]

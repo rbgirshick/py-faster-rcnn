@@ -24,3 +24,6 @@ BG_THRESH_LO    = 0.1
 PIXEL_MEANS     = np.array([[[102.9801, 115.9465, 122.7717]]])
 # Stride in input image pixels at ROI pooling level
 FEAT_STRIDE     = 16
+NUM_CLASSES     = 21
+BBOX_THRESH     = 0.5
+EPS             = 1e-14

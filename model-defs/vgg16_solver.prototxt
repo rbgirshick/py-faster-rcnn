@@ -1,5 +1,6 @@
 #train_net: "model-defs/vgg16_fcs_only.prototxt"
-train_net: "model-defs/vgg16.prototxt"
+#train_net: "model-defs/vgg16.prototxt"
+train_net: "model-defs/vgg16_bbox_reg.prototxt"
 #test_iter: 100
 #test_interval: 1000
 base_lr: 0.001
@@ -7,10 +8,10 @@ lr_policy: "step"
 gamma: 0.1
 stepsize: 30000
 display: 20
-average_loss: 20
+average_loss: 100
 max_iter: 500000
 iter_size: 1
 momentum: 0.9
 weight_decay: 0.0005
 snapshot: 10000
-snapshot_prefix: "snapshots/vgg16_finetune_all"
+snapshot_prefix: "snapshots/vgg16_finetune_all_joint_bbox_reg"

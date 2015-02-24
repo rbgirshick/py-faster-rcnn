@@ -13,6 +13,7 @@
 #   execute solver step(1)
 
 from deep_pyramid import DeepPyramid
+import bbox_regression_targets
 import sys
 caffe_path = '../caffe/python'
 sys.path.insert(0, caffe_path)
@@ -48,96 +49,15 @@ def load_solver_and_window_db(solver_def_path, window_db_path,
     window_db = load_window_db(window_db_path)
     return solver, window_db
 
-def train_model(solver_def_path, window_db_path, pretrained_model=None,
-                GPU_ID=None):
-    solver, window_db = \
-        load_solver_and_window_db(solver_def_path,
-                                  window_db_path,
-                                  pretrained_model=pretrained_model)
-    caffe.set_phase_train()
-    caffe.set_mode_gpu()
-    if GPU_ID is not None:
-        caffe.set_device(GPU_ID)
-
-    max_epochs = 100
-    dp = DeepPyramid(solver.net)
-    for epoch in xrange(max_epochs):
-        # TODO(rbg): shuffle window_db
-        for db_i in xrange(len(window_db)):
-            start_t = time.time()
-
-            # Load image and prepare pyramid input batch
-            im = cv2.imread(window_db[db_i]['image'])
-            im_pyra, pyra_scales = dp.get_image_pyramid(im)
-            im_pyra_batch = dp.image_pyramid_to_batch(im_pyra)
-
-            # Load boxes and convert to pyramid ROIs
-            im_rois = window_db[db_i]['windows'][:, 2:]
-            pyra_levels, pyra_rois = \
-                dp.im_to_feat_pyramid_coords(im_rois, pyra_scales)
-            pyra_levels_and_rois = \
-                np.append(pyra_levels[:, np.newaxis], pyra_rois, axis=1)
-            # TODO(rbg): remove duplicate pyra_rois (due to roi aliasing)
-            # map (class, overlap) to hard label
-            labels = window_db[db_i]['windows'][:, 0]
-            overlaps = window_db[db_i]['windows'][:, 1]
-            # Label all ROIs with < 0.5 overlap as background (label = 0)
-            fg_inds = np.where(overlaps >= 0.5)
-            bg_inds = np.where(overlaps < 0.5)
-            labels[bg_inds] = 0
-
-            # Take a random sample of the examples
-            bg_inds = np.asarray(bg_inds).T
-            fg_inds = np.asarray(fg_inds).T
-            np.random.shuffle(bg_inds)
-            num_to_sample = 1500 - fg_inds.size
-            keep_inds = np.append(fg_inds,
-                                  bg_inds[0:num_to_sample], axis=0).ravel()
-            pyra_levels_and_rois = pyra_levels_and_rois[keep_inds]
-            labels = labels[keep_inds]
-            im_rois = im_rois[keep_inds]
-
-#            for c in xrange(1, 21):
-#                plt.imshow(im)
-#                c_inds = np.where(labels == c)[0]
-#                if c_inds.size == 0:
-#                    continue
-#                print 'class: ', c
-#                for fg_i in c_inds:
-#                    roi = im_rois[fg_i, :]
-#                    plt.gca().add_patch(
-#                        plt.Rectangle((roi[0], roi[1]), roi[2] - roi[0],
-#                                      roi[3] - roi[1], fill=False,
-#                                      edgecolor='r', linewidth=3)
-#                        )
-#                plt.show()
-
-            # Reshape net's input blobs
-            base_shape = im_pyra[0].shape
-            num_rois = pyra_levels_and_rois.shape[0]
-            solver.net.blobs['data'].reshape(dp.num_levels, base_shape[2],
-                                             base_shape[0], base_shape[1])
-            solver.net.blobs['rois'].reshape(num_rois, 5, 1, 1)
-            solver.net.blobs['labels'].reshape(num_rois, 1, 1, 1)
-            # Copy data into net's input blobs
-            solver.net.blobs['data'].data[...] = im_pyra_batch
-            solver.net.blobs['rois'].data[...] = \
-                pyra_levels_and_rois[:, :, np.newaxis, np.newaxis]
-            solver.net.blobs['labels'].data[...] = \
-                labels[:, np.newaxis, np.newaxis, np.newaxis]
-
-            print 'epoch {:d} image {:d}'.format(epoch, db_i)
-            print_label_stats(labels)
-            solver.step(1)
-            # Periodically snapshot and test
-            print 'Elapsed time: {:.4f}'.format(time.time() - start_t)
-
 def train_model_random_scales(solver_def_path, window_db_path,
                               pretrained_model=None, GPU_ID=None):
     solver, window_db = \
         load_solver_and_window_db(solver_def_path,
                                   window_db_path,
                                   pretrained_model=pretrained_model)
+    means, stds = \
+        bbox_regression_targets.append_bbox_regression_targets(window_db)
+
     caffe.set_phase_train()
     caffe.set_mode_gpu()
     if GPU_ID is not None:
@@ -152,8 +72,9 @@ def train_model_random_scales(solver_def_path, window_db_path,
             start_t = time.time()
             db_inds = shuffled_inds[shuffled_i:shuffled_i + conf.IMS_PER_BATCH]
             minibatch_db = [window_db[i] for i in db_inds]
-            im_blob, rois_blob, labels_blob = \
-                finetuning.get_minibatch(minibatch_db)
+            im_blob, rois_blob, labels_blob, \
+                bbox_targets_blob, bbox_loss_weights_blob = \
+                    finetuning.get_minibatch(minibatch_db)
 
             # Reshape net's input blobs
             base_shape = im_blob.shape
@@ -162,6 +83,10 @@ def train_model_random_scales(solver_def_path, window_db_path,
                                              base_shape[2], base_shape[3])
             solver.net.blobs['rois'].reshape(num_rois, 5, 1, 1)
             solver.net.blobs['labels'].reshape(num_rois, 1, 1, 1)
+            solver.net.blobs['bbox_targets'] \
+                .reshape(num_rois, 4 * conf.NUM_CLASSES, 1, 1)
+            solver.net.blobs['bbox_loss_weights'] \
+                .reshape(num_rois, 4 * conf.NUM_CLASSES, 1, 1)
             # Copy data into net's input blobs
             solver.net.blobs['data'].data[...] = \
                 im_blob.astype(np.float32, copy=False)
@@ -170,6 +95,12 @@ def train_model_random_scales(solver_def_path, window_db_path,
                 .astype(np.float32, copy=False)
             solver.net.blobs['labels'].data[...] = \
                 labels_blob[:, np.newaxis, np.newaxis, np.newaxis] \
+                .astype(np.float32, copy=False)
+            solver.net.blobs['bbox_targets'].data[...] = \
+                bbox_targets_blob[:, :, np.newaxis, np.newaxis] \
+                .astype(np.float32, copy=False)
+            solver.net.blobs['bbox_loss_weights'].data[...] = \
+                bbox_loss_weights_blob[:, :, np.newaxis, np.newaxis] \
                 .astype(np.float32, copy=False)
 
             # print 'epoch {:d} image {:d}'.format(epoch, db_i)
