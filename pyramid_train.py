@@ -38,6 +38,9 @@ def parse_args():
                         default=0, type=int)
     parser.add_argument('--solver', dest='solver', help='solver prototxt',
                         default=None, type=str)
+    parser.add_argument('--epochs', dest='epochs',
+                        help='number of epoch to train',
+                        default=16, type=int)
 
     args = parser.parse_args()
     return args
@@ -138,4 +141,5 @@ if __name__ == '__main__':
 
     solver = train_model_random_scales(args.solver, WINDOW_DB,
                                        pretrained_model=CAFFE_MODEL,
-                                       GPU_ID=args.gpu_id, max_epochs=16)
+                                       GPU_ID=args.gpu_id,
+                                       max_epochs=args.epochs)
