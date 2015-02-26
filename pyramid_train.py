@@ -12,6 +12,7 @@
 #   prefill solver's net with two input blobs
 #   execute solver step(1)
 
+import argparse
 from deep_pyramid import DeepPyramid
 import bbox_regression_targets
 import sys
@@ -26,7 +27,20 @@ import time
 import matplotlib.pyplot as plt
 import finetuning
 import fast_rcnn_config as conf
-from keyboard import keyboard
+
+def parse_args():
+    """
+    Parse input arguments
+    """
+
+    parser = argparse.ArgumentParser(description='Train a fast R-CNN')
+    parser.add_argument('--gpu', dest='gpu_id', help='GPU id to use',
+                        default=0, type=int)
+    parser.add_argument('--solver', dest='solver', help='solver prototxt',
+                        default=None, type=str)
+
+    args = parser.parse_args()
+    return args
 
 def print_label_stats(labels):
     counts = np.bincount(labels.astype(np.int))
@@ -50,7 +64,8 @@ def load_solver_and_window_db(solver_def_path, window_db_path,
     return solver, window_db
 
 def train_model_random_scales(solver_def_path, window_db_path,
-                              pretrained_model=None, GPU_ID=None):
+                              pretrained_model=None, GPU_ID=None,
+                              max_epochs=100):
     solver, window_db = \
         load_solver_and_window_db(solver_def_path,
                                   window_db_path,
@@ -63,7 +78,6 @@ def train_model_random_scales(solver_def_path, window_db_path,
     if GPU_ID is not None:
         caffe.set_device(GPU_ID)
 
-    max_epochs = 100
     for epoch in xrange(max_epochs):
         shuffled_inds = np.random.permutation(np.arange(len(window_db)))
         lim = (len(shuffled_inds) / conf.IMS_PER_BATCH) * conf.IMS_PER_BATCH
@@ -108,17 +122,20 @@ def train_model_random_scales(solver_def_path, window_db_path,
             solver.step(1)
             # Periodically snapshot and test
             # print 'Elapsed time: {:.4f}'.format(time.time() - start_t)
+    return solver
 
 
 if __name__ == '__main__':
+    args = parse_args()
+
     # CAFFE_MODEL = '/data/reference_caffe_nets/ilsvrc_2012_train_iter_310k'
     # SOLVER_DEF = './model-defs/pyramid_solver.prototxt'
-    CAFFE_MODEL = '/data/reference_caffe_nets/VGG_ILSVRC_16_layers.caffemodel'
-    SOLVER_DEF = './model-defs/vgg16_solver.prototxt'
-    # CAFFE_MODEL = '/data/reference_caffe_nets/bvlc_googlenet.caffemodel'
-    # SOLVER_DEF = './model-defs/googlenet_solver.prototxt'
     WINDOW_DB = './data/window_file_voc_2007_trainval.txt.pz'
-    GPU_ID = 0 if len(sys.argv) == 1 else int(sys.argv[1])
-    train_model_random_scales(SOLVER_DEF, WINDOW_DB,
-                              pretrained_model=CAFFE_MODEL,
-                              GPU_ID=GPU_ID)
+
+    CAFFE_MODEL = '/data/reference_caffe_nets/VGG_ILSVRC_16_layers.caffemodel'
+    if args.solver is None:
+        args.solver = './model-defs/vgg16_solver.prototxt'
+
+    solver = train_model_random_scales(args.solver, WINDOW_DB,
+                                       pretrained_model=CAFFE_MODEL,
+                                       GPU_ID=args.gpu_id, max_epochs=16)
