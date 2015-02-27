@@ -449,13 +449,12 @@ layers {
   name: "fc8_pascal_bbox"
   type: INNER_PRODUCT
   bottom: "fc7"
-  # bottom: "pool5"
   top: "fc8_pascal_bbox"
   inner_product_param {
     num_output: 84
     weight_filler {
       type: "gaussian"
-      std: 0.01
+      std: 0.001
     }
     bias_filler {
       type: "constant"
@@ -477,7 +476,7 @@ layers {
 }
 layers {
   name: "loss_bbox"
-  type: EUCLIDEAN_LOSS
+  type: SMOOTH_L1_LOSS
   bottom: "fc8_pascal_bbox"
   bottom: "bbox_targets"
   bottom: "bbox_loss_weights"
