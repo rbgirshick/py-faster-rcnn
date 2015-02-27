@@ -23,7 +23,8 @@ class pascal_voc(datasets.imdb):
         self._devkit_path = self._get_default_path() if devkit_path is None \
                             else devkit_path
         self._base_path = os.path.join(self._devkit_path, 'VOC' + self._year)
-        self._classes = ('aeroplane', 'bicycle', 'bird', 'boat',
+        self._classes = ('__background__', # always index 0
+                         'aeroplane', 'bicycle', 'bird', 'boat',
                          'bottle', 'bus', 'car', 'cat', 'chair',
                          'cow', 'diningtable', 'dog', 'horse',
                          'motorbike', 'person', 'pottedplant',
@@ -35,15 +36,24 @@ class pascal_voc(datasets.imdb):
         self._roidb_handler = self.selective_search_roidb
 
     def image_path_at(self, i):
+        """
+        Return the absolute path to image i in the image sequence.
+        """
         return self.image_path_from_index(self._image_index[i])
 
     def image_path_from_index(self, index):
+        """
+        Construct an image path from the image's "index" identifier.
+        """
         image_path = os.path.join(self._base_path, 'JPEGImages',
                                   index + self._image_ext)
         assert os.path.exists(image_path)
         return image_path
 
     def _load_image_set_index(self):
+        """
+        Load the indexes listed in this dataset's image set file.
+        """
         # Example path to image set file:
         # self._devkit_path + /VOCdevkit2007/VOC2007/ImageSets/Main/val.txt
         image_set_file = os.path.join(self._base_path, 'ImageSets', 'Main',
@@ -54,6 +64,9 @@ class pascal_voc(datasets.imdb):
         return image_index
 
     def _get_default_path(self):
+        """
+        Return the default path where PASCAL VOC is expected to be installed.
+        """
         path = os.path.abspath(os.path.join(
                     os.path.dirname(__file__),
                     '..', 'datasets', 'VOCdevkit' + self._year))
@@ -62,7 +75,9 @@ class pascal_voc(datasets.imdb):
 
     def gt_roidb(self):
         """
-        Return the ground-truth ROI db
+        Return the database of ground-truth regions of interest.
+
+        This function loads/saves from/to a cache file to speed up future calls.
         """
         cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
         if os.path.exists(cache_file):
@@ -81,6 +96,12 @@ class pascal_voc(datasets.imdb):
         return gt_roidb
 
     def selective_search_roidb(self):
+        """
+        Return the database of selective search regions of interest.
+        Ground-truth ROIs are also included.
+
+        This function loads/saves from/to a cache file to speed up future calls.
+        """
         cache_file = os.path.join(self.cache_path,
                                   self.name + '_selective_search_roidb.pkl')
 
@@ -95,7 +116,7 @@ class pascal_voc(datasets.imdb):
         roidb = self._merge_roidbs(gt_roidb, ss_roidb)
         with open(cache_file, 'wb') as fid:
             cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
-        print 'wrote gt roidb to {}'.format(cache_file)
+        print 'wrote ss roidb to {}'.format(cache_file)
 
         return roidb
 
@@ -118,7 +139,7 @@ class pascal_voc(datasets.imdb):
         num_images = raw_data['boxes'].ravel().shape[0]
         ss_roidb = []
         for i in xrange(num_images):
-            boxes = raw_data['boxes'].ravel()[i][:, (1, 0, 3, 2)]
+            boxes = raw_data['boxes'].ravel()[i][:, (1, 0, 3, 2)] - 1
             num_boxes = boxes.shape[0]
             gt_boxes = gt_roidb[i]['boxes']
             gt_classes = gt_roidb[i]['gt_classes']
@@ -132,8 +153,8 @@ class pascal_voc(datasets.imdb):
             overlaps[I, gt_classes[argmaxes[I]]] = maxes[I]
             overlaps = scipy.sparse.csr_matrix(overlaps)
             ss_roidb.append({'boxes' : boxes,
-                             'gt_classes' : -np.ones((num_boxes,),
-                                                     dtype=np.int32),
+                             'gt_classes' : np.zeros((num_boxes,),
+                                                      dtype=np.int32),
                              'gt_overlaps' : overlaps})
         return ss_roidb
 
@@ -145,10 +166,7 @@ class pascal_voc(datasets.imdb):
         filename = os.path.join(self._base_path, 'Annotations', index + '.xml')
         # print 'Loading: {}'.format(filename)
         def get_data_from_tag(node, tag):
-            try:
-                return node.getElementsByTagName(tag)[0].childNodes[0].data
-            except:
-                return -1
+            return node.getElementsByTagName(tag)[0].childNodes[0].data
 
         with open(filename) as f:
             data = minidom.parseString(f.read())
@@ -157,7 +175,7 @@ class pascal_voc(datasets.imdb):
         num_objs = len(objs)
 
         boxes = np.zeros((num_objs, 4), dtype=np.uint16)
-        gt_classes = -np.ones((num_objs), dtype=np.int32)
+        gt_classes = np.zeros((num_objs), dtype=np.int32)
         overlaps = np.zeros((num_objs, self.num_classes), dtype=np.float32)
 
         # Load object bounding boxes into a data frame.
