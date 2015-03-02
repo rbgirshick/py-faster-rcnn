@@ -27,3 +27,6 @@ FEAT_STRIDE     = 16
 NUM_CLASSES     = 21
 BBOX_THRESH     = 0.5
 EPS             = 1e-14
+
+TEST_SCALES     = (600,)
+TEST_MAX_SIZE   = 1000

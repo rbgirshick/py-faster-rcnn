@@ -9,15 +9,15 @@ ext_modules = [
         "utils.cython_bbox",
         ["utils/bbox.pyx"]
     ),
-#    Extension(
-#        "saint_tony.cython_nms",
-#        ["saint_tony/nms.pyx"]
-#    )
+    Extension(
+        "utils.cython_nms",
+        ["utils/nms.pyx"]
+    )
 ]
 cmdclass.update({'build_ext': build_ext})
 
 setup(
-    name='saint_tony',
+    name='fast_rcnn',
     cmdclass=cmdclass,
     ext_modules=ext_modules,
     include_dirs=[np.get_include()]
