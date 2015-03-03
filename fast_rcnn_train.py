@@ -15,11 +15,13 @@ import fast_rcnn_config as conf
 import datasets.pascal_voc
 import bbox_regression_targets
 
+from caffe.proto import caffe_pb2
+import google.protobuf as pb2
+
 def parse_args():
     """
     Parse input arguments
     """
-
     parser = argparse.ArgumentParser(description='Train a fast R-CNN')
     parser.add_argument('--gpu', dest='gpu_id', help='GPU id to use',
                         default=0, type=int)
@@ -32,24 +34,49 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def load_solver(solver_def_path, pretrained_model=None):
-    solver = caffe.SGDSolver(solver_def_path)
-    if pretrained_model is not None:
-        print 'Loading pretrained model weights from {:s}' \
-            .format(pretrained_model)
-        solver.net.copy_from(pretrained_model)
-    return solver
+class SolverWrapper(object):
+    def __init__(self, solver_prototxt, pretrained_model=None):
+        self.bbox_means = None
+        self.bbox_stds = None
 
-def train_model_random_scales(solver_def_path, roidb,
-                              pretrained_model=None, GPU_ID=None,
-                              max_epochs=100):
-    caffe.set_phase_train()
-    caffe.set_mode_gpu()
-    if GPU_ID is not None:
-        caffe.set_device(GPU_ID)
+        self.solver = caffe.SGDSolver(solver_prototxt)
+        if pretrained_model is not None:
+            print 'Loading pretrained model weights from {:s}' \
+                .format(pretrained_model)
+            self.solver.net.copy_from(pretrained_model)
 
-    solver = load_solver(solver_def_path, pretrained_model=pretrained_model)
+        self.solver_param = caffe_pb2.SolverParameter()
+        with open(solver_prototxt, 'rt') as f:
+            pb2.text_format.Merge(f.read(), self.solver_param)
 
+    def snapshot(self):
+        assert self.bbox_stds is not None
+        assert self.bbox_means is not None
+
+        stds = self.bbox_stds.ravel()[np.newaxis, np.newaxis, :, np.newaxis]
+        means = self.bbox_means.ravel()[np.newaxis, np.newaxis, np.newaxis, :]
+
+        # save original values
+        orig_0 = self.solver.net.params['fc8_pascal_bbox'][0].data.copy()
+        orig_1 = self.solver.net.params['fc8_pascal_bbox'][1].data.copy()
+
+        # scale and shift with bbox reg unnormalization; then save snapshot
+        self.solver.net.params['fc8_pascal_bbox'][0].data[...] = \
+                self.solver.net.params['fc8_pascal_bbox'][0].data * stds
+        self.solver.net.params['fc8_pascal_bbox'][1].data[...] = \
+                self.solver.net.params['fc8_pascal_bbox'][1].data + means
+
+        filename = self.solver_param.snapshot_prefix + \
+              '_bbox06_iter_{:d}'.format(self.solver.iter) + '.caffemodel'
+        self.solver.net.save(str(filename))
+        print 'Wrote snapshot to: {:s}'.format(filename)
+
+        # restore net to original state
+        self.solver.net.params['fc8_pascal_bbox'][0].data[...] = orig_0
+        self.solver.net.params['fc8_pascal_bbox'][1].data[...] = orig_1
+
+# TODO(rbg): move into SolverWrapper
+def train_model(sw, roidb, max_epochs=100):
     for epoch in xrange(max_epochs):
         shuffled_inds = np.random.permutation(np.arange(len(roidb)))
         lim = (len(shuffled_inds) / conf.IMS_PER_BATCH) * conf.IMS_PER_BATCH
@@ -65,31 +92,33 @@ def train_model_random_scales(solver_def_path, roidb,
             # Reshape net's input blobs
             base_shape = im_blob.shape
             num_rois = rois_blob.shape[0]
-            solver.net.blobs['data'].reshape(base_shape[0], base_shape[1],
-                                             base_shape[2], base_shape[3])
-            solver.net.blobs['rois'].reshape(num_rois, 5, 1, 1)
-            solver.net.blobs['labels'].reshape(num_rois, 1, 1, 1)
-            solver.net.blobs['bbox_targets'] \
+            sw.solver.net.blobs['data'].reshape(base_shape[0], base_shape[1],
+                                                base_shape[2], base_shape[3])
+            sw.solver.net.blobs['rois'].reshape(num_rois, 5, 1, 1)
+            sw.solver.net.blobs['labels'].reshape(num_rois, 1, 1, 1)
+            sw.solver.net.blobs['bbox_targets'] \
                 .reshape(num_rois, 4 * conf.NUM_CLASSES, 1, 1)
-            solver.net.blobs['bbox_loss_weights'] \
+            sw.solver.net.blobs['bbox_loss_weights'] \
                 .reshape(num_rois, 4 * conf.NUM_CLASSES, 1, 1)
             # Copy data into net's input blobs
-            solver.net.blobs['data'].data[...] = \
+            sw.solver.net.blobs['data'].data[...] = \
                 im_blob.astype(np.float32, copy=False)
-            solver.net.blobs['rois'].data[...] = \
+            sw.solver.net.blobs['rois'].data[...] = \
                 rois_blob[:, :, np.newaxis, np.newaxis] \
                 .astype(np.float32, copy=False)
-            solver.net.blobs['labels'].data[...] = \
+            sw.solver.net.blobs['labels'].data[...] = \
                 labels_blob[:, np.newaxis, np.newaxis, np.newaxis] \
                 .astype(np.float32, copy=False)
-            solver.net.blobs['bbox_targets'].data[...] = \
+            sw.solver.net.blobs['bbox_targets'].data[...] = \
                 bbox_targets_blob[:, :, np.newaxis, np.newaxis] \
                 .astype(np.float32, copy=False)
-            solver.net.blobs['bbox_loss_weights'].data[...] = \
+            sw.solver.net.blobs['bbox_loss_weights'].data[...] = \
                 bbox_loss_weights_blob[:, :, np.newaxis, np.newaxis] \
                 .astype(np.float32, copy=False)
 
-            solver.step(1)
+            sw.solver.step(1)
+            if sw.solver.iter % conf.SNAPSHOT_ITERS == 0:
+                sw.snapshot()
     return solver
 
 def training_roidb(imdb):
@@ -119,37 +148,35 @@ def training_roidb(imdb):
         nonzero_inds = np.where(max_overlaps > 0)[0]
         assert all(max_classes[nonzero_inds] != 0)
 
-#    import cPickle
-#    import gzip
-#    WINDOW_DB = './data/window_file_voc_2007_trainval.txt.pz'
-#    with gzip.GzipFile(WINDOW_DB, 'rb') as f:
-#        windb = cPickle.load(f)
-#
-#    from IPython import embed; embed()
-
     return roidb
 
 if __name__ == '__main__':
     args = parse_args()
 
-    # CAFFE_MODEL = '/data/reference_caffe_nets/ilsvrc_2012_train_iter_310k'
-    # SOLVER_DEF = './model-defs/pyramid_solver.prototxt'
+    # set up caffe
+    caffe.set_phase_train()
+    caffe.set_mode_gpu()
+    if args.gpu_id is not None:
+        caffe.set_device(args.gpu_id)
 
     imdb_train = datasets.pascal_voc('trainval', '2007')
 
     # enhance roidb to contain some useful derived quanties
     roidb_train = training_roidb(imdb_train)
 
-    # TODO(rbg): need to save means and stds
-    # further enhance roidb to contain bounding-box regression targets
+    # enhance roidb to contain bounding-box regression targets
     means, stds = \
         bbox_regression_targets.append_bbox_regression_targets(roidb_train)
 
+    # CAFFE_MODEL = '/data/reference_caffe_nets/ilsvrc_2012_train_iter_310k'
+    # SOLVER_DEF = './model-defs/pyramid_solver.prototxt'
     CAFFE_MODEL = '/data/reference_caffe_nets/VGG_ILSVRC_16_layers.caffemodel'
     if args.solver is None:
         args.solver = './model-defs/vgg16_solver.prototxt'
 
-    solver = train_model_random_scales(args.solver, roidb_train,
-                                       pretrained_model=CAFFE_MODEL,
-                                       GPU_ID=args.gpu_id,
-                                       max_epochs=args.epochs)
+    sw = SolverWrapper(args.solver, pretrained_model=CAFFE_MODEL)
+    sw.bbox_means = means
+    sw.bbox_stds = stds
+
+    train_model(sw, roidb_train, max_epochs=args.epochs)
+    sw.snapshot()
