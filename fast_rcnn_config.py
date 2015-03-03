@@ -2,11 +2,9 @@ import numpy as np
 
 # Scales used in the SPP-net paper
 # SCALES          = (480, 576, 688, 864, 1200)
-# SCALES          = (480, 576, 640)
 SCALES          = (480, 576, 600)
 # Max pixel size of a scaled input image
 # MAX_SIZE        = 2000
-# MAX_SIZE        = 1067
 MAX_SIZE        = 1000
 # Images per batch
 IMS_PER_BATCH   = 2 # 4
@@ -29,7 +27,5 @@ BBOX_THRESH     = 0.5
 EPS             = 1e-14
 SNAPSHOT_ITERS  = 10000
 
-# TEST_SCALES     = (640,)
-# TEST_MAX_SIZE   = 1067
 TEST_SCALES     = (600,)
 TEST_MAX_SIZE   = 1000
