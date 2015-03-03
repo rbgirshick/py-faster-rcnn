@@ -1,8 +1,5 @@
-#train_net: "model-defs/vgg16_fcs_only.prototxt"
 #train_net: "model-defs/vgg16.prototxt"
 train_net: "model-defs/vgg16_bbox_reg.prototxt"
-#test_iter: 100
-#test_interval: 1000
 base_lr: 0.001
 lr_policy: "step"
 gamma: 0.1
@@ -13,5 +10,9 @@ max_iter: 500000
 iter_size: 1
 momentum: 0.9
 weight_decay: 0.0005
-snapshot: 10000
-snapshot_prefix: "snapshots/vgg16_finetune_all_joint_bbox_reg"
+# We disable standard caffe solver snapshotting and implement our own snapshot
+# function
+snapshot: 0
+# We still use the snapshot prefix, though
+snapshot_prefix: "snapshots/vgg16_finetune_all_joint_bbox_reg_smoothL1_roidb3"
+#debug_info: true
