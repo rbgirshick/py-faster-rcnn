@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 
-import sys
-import subprocess
-import os
-caffe_path = '../caffe/python'
-sys.path.insert(0, caffe_path)
+import fast_rcnn_config as conf
 
 import argparse
 from utils.timer import Timer
@@ -12,9 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 import caffe
-import fast_rcnn_config as conf
 import utils.cython_nms
-import datasets.pascal_voc
 import cPickle
 import heapq
 
@@ -122,9 +116,9 @@ def _clip_boxes(boxes, im_shape):
     return boxes
 
 def im_detect(net, im, boxes):
-    # TODO: remove duplicates
     blobs, im_scale_factors = _get_blobs(im, boxes)
 
+    # TODO: remove duplicates
     # v = np.array([1, 1e3, 1e6, 1e9, 1e12])
     # hashes = blobs['rois'][:, :, 0, 0].dot(v.T)
     hashes = (blobs['rois'][:, :, 0, 0] *
@@ -187,40 +181,23 @@ def _vis_detections(im, class_name, dets):
             plt.title('{}  {:.3f}'.format(class_name, score))
             plt.pause(0.5)
 
-def _write_voc_results_file(imdb, all_boxes):
-    pid = os.getpid()
-    #/data/VOC2007/VOCdevkit/results/VOC2007/Main/comp4-44503_det_test_aeroplane.txt
-    base_path = './datasets/VOCdevkit2007/results/VOC2007/Main/comp4-{}_'.format(pid)
-    for cls_ind, cls in enumerate(imdb.classes):
-        if cls == '__background__':
-            continue
-        file_name = base_path + 'det_test_' + cls + '.txt'
-        with open(file_name, 'wt') as f:
-            for im_ind, index in enumerate(imdb.image_index):
-                dets = all_boxes[cls_ind][im_ind]
-                if dets == []:
-                    continue
-                keep = utils.cython_nms.nms(dets, 0.3)
-                if len(keep) == 0:
-                    continue
-                dets = dets[keep, :]
-                # the VOCdevkit expects 1-based indices
-                dets[:, :4] += 1
-                for k in xrange(dets.shape[0]):
-                    f.write('{:s} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.format(
-                            index, dets[k, -1], dets[k, 0], dets[k, 1],
-                            dets[k, 2], dets[k, 3]))
-    print 'Evaluate comp4-{}'.format(pid)
-    return pid
+def _apply_nms(all_boxes, thresh):
+    num_classes = len(all_boxes)
+    num_images = len(all_boxes[0])
+    nms_boxes = [[[] for _ in xrange(num_images)]
+                 for _ in xrange(num_classes)]
+    for cls_ind in xrange(num_classes):
+        for im_ind in xrange(num_images):
+            dets = all_boxes[cls_ind][im_ind]
+            if dets == []:
+                continue
+            keep = utils.cython_nms.nms(dets, thresh)
+            if len(keep) == 0:
+                continue
+            nms_boxes[cls_ind][im_ind] = dets[keep, :].copy()
+    return nms_boxes
 
-def _do_matlab_eval(pid):
-    cmd = 'cd ../rcnn && '
-    cmd += 'matlab -nodisplay -nodesktop '
-    cmd += '-r "load imdb/cache/imdb_voc_2007_test.mat; '
-    cmd += 'imdb_eval_voc_py(imdb, {}); quit;"'.format(pid)
-    status = subprocess.call(cmd, shell=True)
-
-def fast_rcnn_test(net, imdb):
+def test_net(net, imdb):
     num_images = len(imdb.image_index)
     # heuristic: keep an average of 40 detections per class per images prior
     # to NMS
@@ -289,22 +266,8 @@ def fast_rcnn_test(net, imdb):
     with open('dets.pkl', 'wb') as f:
         cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL)
 
-    pid = _write_voc_results_file(imdb, all_boxes)
-    _do_matlab_eval(pid)
+    print 'Applying NMS to all detections'
+    nms_dets = _apply_nms(all_boxes, conf.TEST_NMS)
 
-    # Write results file and call matlab to evaluate
-
-if __name__ == '__main__':
-    prototxt = 'model-defs/vgg16_pyramid_forward_only_bbox_reg.prototxt'
-    caffemodel = '/home/rbg/working/pyramid-rcnn/fast-rcnn/snapshots/vgg16_finetune_all_joint_bbox_reg_smoothL1_roidb2_iter_40000.caffemodel'
-
-    caffe.set_phase_test()
-    caffe.set_mode_gpu()
-    GPU_ID = 2
-    if GPU_ID is not None:
-        caffe.set_device(GPU_ID)
-    net = caffe.Net(prototxt, caffemodel)
-
-    import datasets.pascal_voc
-    imdb = datasets.pascal_voc('test', '2007')
-    fast_rcnn_test(net, imdb)
+    print 'Evaluating detections'
+    imdb.evaluate_detections(nms_dets)

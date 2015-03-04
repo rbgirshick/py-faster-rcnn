@@ -8,12 +8,7 @@ import scipy.sparse
 import scipy.io as sio
 import utils.cython_bbox
 import cPickle
-
-# Not bothering with image size for now
-# can use:
-# sizes =
-#   [PIL.Image.open(d.image_path_at(i)).size
-#    for i in xrange(0, len(d.image_index))]
+import subprocess
 
 class pascal_voc(datasets.imdb):
     def __init__(self, image_set, year, devkit_path=None):
@@ -34,6 +29,9 @@ class pascal_voc(datasets.imdb):
         self._image_index = self._load_image_set_index()
         # Default to roidb handler
         self._roidb_handler = self.selective_search_roidb
+
+        assert os.path.exists(self._devkit_path)
+        assert os.path.exists(self._base_path)
 
     def image_path_at(self, i):
         """
@@ -70,7 +68,6 @@ class pascal_voc(datasets.imdb):
         path = os.path.abspath(os.path.join(
                     os.path.dirname(__file__),
                     '..', 'datasets', 'VOCdevkit' + self._year))
-        assert os.path.exists(path)
         return path
 
     def gt_roidb(self):
@@ -196,6 +193,43 @@ class pascal_voc(datasets.imdb):
         return {'boxes' : boxes,
                 'gt_classes': gt_classes,
                 'gt_overlaps' : overlaps}
+
+    def _write_voc_results_file(self, all_boxes):
+        pid = os.getpid()
+        # VOCdevkit/results/VOC2007/Main/comp4-44503_det_test_aeroplane.txt
+        path = os.path.join(self._devkit_path, 'results', 'VOC' + self._year,
+                            'Main', 'comp4-{}_'.format(pid))
+        for cls_ind, cls in enumerate(self.classes):
+            if cls == '__background__':
+                continue
+            print 'Writing {} VOC results file'.format(cls)
+            filename = path + 'det_test_' + cls + '.txt'
+            with open(filename, 'wt') as f:
+                for im_ind, index in enumerate(self.image_index):
+                    dets = all_boxes[cls_ind][im_ind]
+                    if dets == []:
+                        continue
+                    # the VOCdevkit expects 1-based indices
+                    dets[:, :4] += 1
+                    for k in xrange(dets.shape[0]):
+                        f.write('{:s} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.
+                                format(index, dets[k, -1],
+                                       dets[k, 0], dets[k, 1],
+                                       dets[k, 2], dets[k, 3]))
+        return pid
+
+    def _do_matlab_eval(self, pid, rm_results=True):
+        path = os.path.join(os.path.dirname(__file__),
+                            'VOCdevkit-matlab-wrapper')
+        cmd = 'cd {} && '.format(path)
+        cmd += 'matlab -nodisplay -nodesktop '
+        cmd += '-r "voc_eval(\'{:s}\', {:d}, {:d}); quit;"' \
+               .format(self._devkit_path, pid, int(rm_results))
+        status = subprocess.call(cmd, shell=True)
+
+    def evaluate_detections(self, all_boxes):
+        pid = self._write_voc_results_file(all_boxes)
+        self._do_matlab_eval(pid)
 
 if __name__ == '__main__':
     d = datasets.pascal_voc('trainval', '2007')

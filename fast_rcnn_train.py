@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 
-import sys
-caffe_path = '../caffe/python'
-sys.path.insert(0, caffe_path)
-
+import fast_rcnn_config as conf
 import argparse
 import time
 import numpy as np
@@ -11,7 +8,6 @@ import matplotlib.pyplot as plt
 import cv2
 import caffe
 import finetuning
-import fast_rcnn_config as conf
 import datasets.pascal_voc
 import bbox_regression_targets
 

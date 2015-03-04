@@ -1,3 +1,8 @@
+import os
+import sys
+caffe_path = os.path.abspath(os.path.join('..', 'caffe', 'python'))
+sys.path.insert(0, caffe_path)
+
 import numpy as np
 
 # Scales used in the SPP-net paper
@@ -29,3 +34,4 @@ SNAPSHOT_ITERS  = 10000
 
 TEST_SCALES     = (600,)
 TEST_MAX_SIZE   = 1000
+TEST_NMS        = 0.3
