@@ -119,7 +119,6 @@ def train_model(sw, roidb, max_epochs=100):
             sw.solver.step(1)
             if sw.solver.iter % conf.SNAPSHOT_ITERS == 0:
                 sw.snapshot()
-    return solver
 
 def training_roidb(imdb):
     """
