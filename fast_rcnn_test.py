@@ -2,6 +2,7 @@
 
 import sys
 import subprocess
+import os
 caffe_path = '../caffe/python'
 sys.path.insert(0, caffe_path)
 
@@ -213,10 +214,10 @@ def _write_voc_results_file(imdb, all_boxes):
     return pid
 
 def _do_matlab_eval(pid):
-    cmd = 'cd ../rcnn;'
+    cmd = 'cd ../rcnn && '
     cmd += 'matlab -nodisplay -nodesktop '
     cmd += '-r "load imdb/cache/imdb_voc_2007_test.mat; '
-    cmd += 'imdb_eval_voc_py(imdb, {});"'.format(pid)
+    cmd += 'imdb_eval_voc_py(imdb, {}); quit;"'.format(pid)
     status = subprocess.call(cmd, shell=True)
 
 def fast_rcnn_test(net, imdb):
