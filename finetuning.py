@@ -89,8 +89,9 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image):
     # foreground ROIs
     fg_rois_per_this_image = np.minimum(fg_rois_per_image, fg_inds.size)
     # Sample foreground regions without replacement
-    fg_inds = np.random.choice(fg_inds, size=fg_rois_per_this_image,
-                               replace=False)
+    if fg_inds > 0:
+        fg_inds = np.random.choice(fg_inds, size=fg_rois_per_this_image,
+                                   replace=False)
 
     # Select background ROIs as those within [BG_THRESH_LO, BG_THRESH_HI)
     bg_inds = np.where((overlaps < conf.BG_THRESH_HI) &
@@ -101,8 +102,9 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image):
     bg_rois_per_this_image = np.minimum(bg_rois_per_this_image,
                                         bg_inds.size)
     # Sample foreground regions without replacement
-    bg_inds = np.random.choice(bg_inds, size=bg_rois_per_this_image,
-                               replace=False)
+    if bg_inds.size > 0:
+        bg_inds = np.random.choice(bg_inds, size=bg_rois_per_this_image,
+                                   replace=False)
     # The indices that we're taking (both fg and bg)
     keep_inds = np.append(fg_inds, bg_inds)
     labels = labels[keep_inds]
