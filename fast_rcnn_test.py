@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import subprocess
 caffe_path = '../caffe/python'
 sys.path.insert(0, caffe_path)
 
@@ -186,8 +187,9 @@ def _vis_detections(im, class_name, dets):
             plt.pause(0.5)
 
 def _write_voc_results_file(imdb, all_boxes):
+    pid = os.getpid()
     #/data/VOC2007/VOCdevkit/results/VOC2007/Main/comp4-44503_det_test_aeroplane.txt
-    base_path = '/data/VOC2007/VOCdevkit/results/VOC2007/Main/comp4-py_'
+    base_path = './datasets/VOCdevkit2007/results/VOC2007/Main/comp4-{}_'.format(pid)
     for cls_ind, cls in enumerate(imdb.classes):
         if cls == '__background__':
             continue
@@ -207,6 +209,15 @@ def _write_voc_results_file(imdb, all_boxes):
                     f.write('{:s} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.format(
                             index, dets[k, -1], dets[k, 0], dets[k, 1],
                             dets[k, 2], dets[k, 3]))
+    print 'Evaluate comp4-{}'.format(pid)
+    return pid
+
+def _do_matlab_eval(pid):
+    cmd = 'cd ../rcnn;'
+    cmd += 'matlab -nodisplay -nodesktop '
+    cmd += '-r "load imdb/cache/imdb_voc_2007_test.mat; '
+    cmd += 'imdb_eval_voc_py(imdb, {});"'.format(pid)
+    status = subprocess.call(cmd), shell=True)
 
 def fast_rcnn_test(net, imdb):
     num_images = len(imdb.image_index)
@@ -277,7 +288,8 @@ def fast_rcnn_test(net, imdb):
     with open('dets.pkl', 'wb') as f:
         cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL)
 
-    _write_voc_results_file(imdb, all_boxes)
+    pid = _write_voc_results_file(imdb, all_boxes)
+    _do_matlab_eval(pid)
 
     # Write results file and call matlab to evaluate
 
@@ -291,17 +303,6 @@ if __name__ == '__main__':
     if GPU_ID is not None:
         caffe.set_device(GPU_ID)
     net = caffe.Net(prototxt, caffemodel)
-
-    print '!!!!!!!!!!!!!!!!!! REMOVE mean/std??? !!!!!!!!!!!!!!!!!!'
-    # TODO(rbg): save net with these changes during training snapshots
-    import scipy.io
-    stats = scipy.io.loadmat('../rcnn/data/voc_2007_means_stds.mat')
-    stds = stats['stds'].ravel()[np.newaxis, np.newaxis, :, np.newaxis]
-    means = stats['means'].ravel()[np.newaxis, np.newaxis, np.newaxis, :]
-    net.params['fc8_pascal_bbox'][0].data[...] = \
-            net.params['fc8_pascal_bbox'][0].data * stds
-    net.params['fc8_pascal_bbox'][1].data[...] = \
-        net.params['fc8_pascal_bbox'][1].data + means
 
     import datasets.pascal_voc
     imdb = datasets.pascal_voc('test', '2007')
