@@ -5,6 +5,8 @@ import fast_rcnn_config as conf
 
 def get_minibatch(roidb):
     num_images = len(roidb)
+    # Infer number of classes from the number of columns in gt_overlaps
+    num_classes = roidb[0]['gt_overlaps'].shape[1]
     # Sample random scales to use for each image in this batch
     random_scale_inds = \
         np.random.randint(0, high=len(conf.SCALES), size=num_images)
@@ -20,7 +22,7 @@ def get_minibatch(roidb):
     # Now, build the region of interest and label blobs
     rois_blob = np.zeros((0, 5), dtype=np.float32)
     labels_blob = np.zeros((0), dtype=np.float32)
-    bbox_targets_blob = np.zeros((0, 4 * conf.NUM_CLASSES), dtype=np.float32)
+    bbox_targets_blob = np.zeros((0, 4 * num_classes), dtype=np.float32)
     bbox_loss_weights_blob = np.zeros(bbox_targets_blob.shape, dtype=np.float32)
     all_overlaps = []
     for im_i in xrange(num_images):
@@ -29,10 +31,6 @@ def get_minibatch(roidb):
                           fg_rois_per_image,
                           rois_per_image)
         feat_rois = _map_im_rois_to_feat_rois(im_rois, im_scale_factors[im_i])
-        # Assert various bounds
-        assert((feat_rois[:, 2] >= feat_rois[:, 0]).all())
-        assert((feat_rois[:, 3] >= feat_rois[:, 1]).all())
-        assert((feat_rois >= 0).all())
         rois_blob_this_image = \
             np.append(im_i * np.ones((feat_rois.shape[0], 1)), feat_rois,
                       axis=1)
@@ -50,7 +48,7 @@ def _get_bbox_regression_labels(bbox_target_data):
     # Return (N, K * 4, 1, 1) blob of regression targets
     # Return (N, K * 4, 1, 1) blob of Euclidean loss weights
     clss = bbox_target_data[:, 0]
-    bbox_targets = np.zeros((clss.size, 4 * conf.NUM_CLASSES), dtype=np.float32)
+    bbox_targets = np.zeros((clss.size, 4 * num_classes), dtype=np.float32)
     bbox_loss_weights = np.zeros(bbox_targets.shape, dtype=np.float32)
     inds = np.where(clss > 0)[0]
     for ind in inds:

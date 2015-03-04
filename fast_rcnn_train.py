@@ -93,9 +93,9 @@ def train_model(sw, roidb, max_epochs=100):
             sw.solver.net.blobs['rois'].reshape(num_rois, 5, 1, 1)
             sw.solver.net.blobs['labels'].reshape(num_rois, 1, 1, 1)
             sw.solver.net.blobs['bbox_targets'] \
-                .reshape(num_rois, 4 * conf.NUM_CLASSES, 1, 1)
+                .reshape(num_rois, bbox_targets_blob.shape[1], 1, 1)
             sw.solver.net.blobs['bbox_loss_weights'] \
-                .reshape(num_rois, 4 * conf.NUM_CLASSES, 1, 1)
+                .reshape(num_rois, bbox_loss_weights_blob.shape[1], 1, 1)
             # Copy data into net's input blobs
             sw.solver.net.blobs['data'].data[...] = \
                 im_blob.astype(np.float32, copy=False)

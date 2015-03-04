@@ -46,6 +46,8 @@ def _compute_targets(rois, overlaps, labels):
 
 def append_bbox_regression_targets(roidb):
     num_images = len(roidb)
+    # Infer number of classes from the number of columns in gt_overlaps
+    num_classes = roidb[0]['gt_overlaps'].shape[1]
     for im_i in xrange(num_images):
         rois = roidb[im_i]['boxes']
         max_overlaps = roidb[im_i]['max_overlaps']
@@ -55,12 +57,12 @@ def append_bbox_regression_targets(roidb):
 
     # Compute values needed for means and stds
     # var(x) = E(x^2) - E(x)^2
-    class_counts = np.zeros((conf.NUM_CLASSES, 1)) + conf.EPS
-    sums = np.zeros((conf.NUM_CLASSES, 4))
-    squared_sums = np.zeros((conf.NUM_CLASSES, 4))
+    class_counts = np.zeros((num_classes, 1)) + conf.EPS
+    sums = np.zeros((num_classes, 4))
+    squared_sums = np.zeros((num_classes, 4))
     for im_i in xrange(num_images):
         targets = roidb[im_i]['bbox_targets']
-        for cls in xrange(1, conf.NUM_CLASSES):
+        for cls in xrange(1, num_classes):
             cls_inds = np.where(targets[:, 0] == cls)[0]
             if cls_inds.size > 0:
                 class_counts[cls] += cls_inds.size
@@ -73,17 +75,12 @@ def append_bbox_regression_targets(roidb):
     # Normalize targets
     for im_i in xrange(num_images):
         targets = roidb[im_i]['bbox_targets']
-        for cls in xrange(1, conf.NUM_CLASSES):
+        for cls in xrange(1, num_classes):
             cls_inds = np.where(targets[:, 0] == cls)[0]
             roidb[im_i]['bbox_targets'][cls_inds, 1:] \
                     -= means[cls, :]
             roidb[im_i]['bbox_targets'][cls_inds, 1:] \
                     /= stds[cls, :]
-
-    # TODO(rbg) remove this when everything is in python
-    import scipy.io
-    scipy.io.savemat('../rcnn/data/voc_2007_means_stds.mat',
-                     {'means': means, 'stds': stds})
 
     # These values will be needed for making predictions
     # (the predicts will need to be unnormalized and uncentered)
