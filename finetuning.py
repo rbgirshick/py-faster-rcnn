@@ -89,7 +89,7 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image):
     # foreground ROIs
     fg_rois_per_this_image = np.minimum(fg_rois_per_image, fg_inds.size)
     # Sample foreground regions without replacement
-    if fg_inds > 0:
+    if fg_inds.size > 0:
         fg_inds = np.random.choice(fg_inds, size=fg_rois_per_this_image,
                                    replace=False)
 
