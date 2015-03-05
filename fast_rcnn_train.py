@@ -63,7 +63,7 @@ class SolverWrapper(object):
                 self.solver.net.params['fc8_pascal_bbox'][1].data + means
 
         filename = self.solver_param.snapshot_prefix + \
-              '_bbox06_iter_{:d}'.format(self.solver.iter) + '.caffemodel'
+              '_iter_{:d}'.format(self.solver.iter) + '.caffemodel'
         self.solver.net.save(str(filename))
         print 'Wrote snapshot to: {:s}'.format(filename)
 

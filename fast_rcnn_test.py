@@ -12,6 +12,7 @@ import utils.cython_nms
 import cPickle
 import heapq
 
+# TODO(rbg): overlaps significantly with finetuning._get_image_blob()
 def _get_image_blob(im):
     im_pyra = []
     im_orig = im.astype(np.float32, copy=True)
@@ -53,6 +54,7 @@ def _get_rois_blob(im_rois, im_scale_factors):
     rois_blob = np.hstack((levels, feat_rois))[:, :, np.newaxis, np.newaxis]
     return rois_blob.astype(np.float32, copy=False)
 
+# TODO(rbg): overlaps with finetuning._map_im_rois_to_feat_rois()
 def _map_im_rois_to_feat_rois(im_rois, scales):
     im_rois = im_rois.astype(np.float, copy=False)
     widths = im_rois[:, 2] - im_rois[:, 0] + 1

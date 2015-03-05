@@ -44,7 +44,7 @@ def get_minibatch(roidb):
     return im_blob, rois_blob, labels_blob, \
            bbox_targets_blob, bbox_loss_weights_blob
 
-def _get_bbox_regression_labels(bbox_target_data):
+def _get_bbox_regression_labels(bbox_target_data, num_classes):
     # Return (N, K * 4, 1, 1) blob of regression targets
     # Return (N, K * 4, 1, 1) blob of Euclidean loss weights
     clss = bbox_target_data[:, 0]
@@ -81,6 +81,9 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image):
     overlaps = roidb['max_overlaps']
     rois = roidb['boxes'].astype(np.float)
 
+    # Infer number of classes from the number of columns in gt_overlaps
+    num_classes = roidb['gt_overlaps'].shape[1]
+
     # Select foreground ROIs as those with >= FG_THRESH overlap
     fg_inds = np.where(overlaps >= conf.FG_THRESH)[0]
     # Guard against the case when an image has fewer than fg_rois_per_image
@@ -111,7 +114,8 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image):
     overlaps = overlaps[keep_inds]
     rois = rois[keep_inds]
     bbox_targets, bbox_loss_weights = \
-        _get_bbox_regression_labels(roidb['bbox_targets'][keep_inds, :])
+        _get_bbox_regression_labels(roidb['bbox_targets'][keep_inds, :],
+                                    num_classes)
     return labels, overlaps, rois, bbox_targets, bbox_loss_weights
 
 def _get_image_blob(roidb, scale_inds):
