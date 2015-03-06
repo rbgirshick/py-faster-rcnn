@@ -1,3 +1,4 @@
 *.pyc
+.ipynb_checkpoints
 utils/*.c
 utils/*.so
