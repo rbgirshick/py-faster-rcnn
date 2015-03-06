@@ -4,9 +4,9 @@ import fast_rcnn_test
 import caffe
 
 if __name__ == '__main__':
-    prototxt = 'model-defs/vgg16_pyramid_forward_only_bbox_reg.prototxt'
-    caffemodel = '../fast-rcnn-bbox04/snapshots/vgg16_finetune_bbox04_bbox06_iter_40000.caffemodel'
-    GPU_ID = 3
+    prototxt = 'model-defs/vgg16_bbox_reg_deploy.prototxt'
+    caffemodel = 'snapshots/vgg16_finetune_joint_flipped_iter_40000.caffemodel'
+    GPU_ID = 2
 
     caffe.set_phase_test()
     caffe.set_mode_gpu()

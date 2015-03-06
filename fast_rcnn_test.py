@@ -120,11 +120,12 @@ def _clip_boxes(boxes, im_shape):
 def im_detect(net, im, boxes):
     blobs, im_scale_factors = _get_blobs(im, boxes)
 
-    # TODO: remove duplicates
-    # v = np.array([1, 1e3, 1e6, 1e9, 1e12])
-    # hashes = blobs['rois'][:, :, 0, 0].dot(v.T)
-    hashes = (blobs['rois'][:, :, 0, 0] *
-              np.array([[1, 1e3, 1e6, 1e9, 1e12]])).sum(axis=1)
+    # When mapping from image ROIs to feature map ROIs, there's some aliasing
+    # (some distinct image ROIs get mapped to the same feature ROI).
+    # Here, we identify duplicate feature ROIs, so we only compute features
+    # on the unique subset.
+    v = np.array([1, 1e3, 1e6, 1e9, 1e12])
+    hashes = blobs['rois'][:, :, 0, 0].dot(v.T)
     _, index, inv_index = np.unique(hashes, return_index=True,
                                     return_inverse=True)
     blobs['rois'] = blobs['rois'][index, :, :, :]
@@ -138,9 +139,14 @@ def im_detect(net, im, boxes):
     net.blobs['rois'].reshape(num_rois, 5, 1, 1)
     blobs_out = net.forward(data=blobs['data'].astype(np.float32, copy=False),
                             rois=blobs['rois'].astype(np.float32, copy=False))
-    scores = blobs_out['fc8_pascal'][:, :, 0, 0]
-    # Return scores as fg - bg
-    scores = scores - scores[:, 0][:, np.newaxis]
+    if conf.TEST_BINARY:
+        # simulate binary logistic regression
+        scores = blobs_out['fc8_pascal'][:, :, 0, 0]
+        # Return scores as fg - bg
+        scores = scores - scores[:, 0][:, np.newaxis]
+    else:
+        # use softmax estimated probabilities
+        scores = blobs_out['prob'][:, :, 0, 0]
     box_deltas = blobs_out['fc8_pascal_bbox'][:, :, 0, 0]
     pred_boxes = _bbox_pred(boxes, box_deltas)
     pred_boxes = _clip_boxes(pred_boxes, im.shape)

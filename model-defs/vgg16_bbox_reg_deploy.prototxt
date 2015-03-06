@@ -431,6 +431,12 @@ layers {
   weight_decay: 0
 }
 layers {
+  name: "prob"
+  type: SOFTMAX
+  bottom: "fc8_pascal"
+  top: "prob"
+}
+layers {
   name: "fc8_pascal_bbox"
   type: INNER_PRODUCT
   bottom: "fc7"
