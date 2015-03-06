@@ -156,6 +156,9 @@ if __name__ == '__main__':
 
     imdb_train = datasets.pascal_voc('trainval', '2007')
 
+    # enhance roidb to contain flipped examples
+    imdb_train.append_flipped_roidb()
+
     # enhance roidb to contain some useful derived quanties
     roidb_train = training_roidb(imdb_train)
 
