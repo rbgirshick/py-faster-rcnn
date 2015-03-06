@@ -175,10 +175,10 @@ if __name__ == '__main__':
         bbox_regression_targets.append_bbox_regression_targets(roidb_train)
 
     # CAFFE_MODEL = '/data/reference_caffe_nets/ilsvrc_2012_train_iter_310k'
-    # SOLVER_DEF = './model-defs/pyramid_solver.prototxt'
+    # SOLVER_DEF = './models/pyramid_solver.prototxt'
     CAFFE_MODEL = '/data/reference_caffe_nets/VGG_ILSVRC_16_layers.caffemodel'
     if args.solver is None:
-        args.solver = './model-defs/vgg16_solver.prototxt'
+        args.solver = './models/vgg16_solver.prototxt'
 
     print 'Solving...'
     sw = SolverWrapper(args.solver, pretrained_model=CAFFE_MODEL)

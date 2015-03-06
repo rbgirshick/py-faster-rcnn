@@ -1,5 +1,5 @@
-#train_net: "model-defs/vgg16.prototxt"
-train_net: "model-defs/vgg16_bbox_reg.prototxt"
+#train_net: "models/vgg16.prototxt"
+train_net: "models/vgg16_bbox_reg.prototxt"
 base_lr: 0.001
 lr_policy: "step"
 gamma: 0.1

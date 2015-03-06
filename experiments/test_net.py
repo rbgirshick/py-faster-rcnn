@@ -4,7 +4,7 @@ import fast_rcnn_test
 import caffe
 
 if __name__ == '__main__':
-    prototxt = 'model-defs/vgg16_bbox_reg_deploy.prototxt'
+    prototxt = 'models/vgg16_bbox_reg_deploy.prototxt'
     caffemodel = 'snapshots/vgg16_finetune_joint_flipped_iter_40000.caffemodel'
     GPU_ID = 2
 
