@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import fast_rcnn_config as conf
 
 import argparse
@@ -11,8 +9,8 @@ import caffe
 import utils.cython_nms
 import cPickle
 import heapq
+import utils.blob
 
-# TODO(rbg): overlaps significantly with finetuning._get_image_blob()
 def _get_image_blob(im):
     im_pyra = []
     im_orig = im.astype(np.float32, copy=True)
@@ -22,7 +20,6 @@ def _get_image_blob(im):
     im_size_min = np.min(im_shape[0:2])
     im_size_max = np.max(im_shape[0:2])
 
-    max_shape = (0, 0, 0)
     processed_ims = []
     im_scale_factors = []
 
@@ -35,18 +32,10 @@ def _get_image_blob(im):
                         interpolation=cv2.INTER_LINEAR)
         im_scale_factors.append(im_scale)
         processed_ims.append(im)
-        max_shape = np.maximum(max_shape, im.shape)
 
-    num_images = len(processed_ims)
-    blob = np.zeros((num_images, max_shape[0],
-                     max_shape[1], max_shape[2]), dtype=np.float32)
-    for i in xrange(num_images):
-        im = processed_ims[i]
-        blob[i, 0:im.shape[0], 0:im.shape[1], :] = im
-    # Move channels (axis 3) to axis 1
-    # Axis order will become: (batch elem, channel, height, width)
-    channel_swap = (0, 3, 1, 2)
-    blob = blob.transpose(channel_swap)
+    # Create a blob to hold the input images
+    blob = utils.blob.im_list_to_blob(processed_ims)
+
     return blob, np.array(im_scale_factors)
 
 def _get_rois_blob(im_rois, im_scale_factors):
@@ -54,19 +43,22 @@ def _get_rois_blob(im_rois, im_scale_factors):
     rois_blob = np.hstack((levels, feat_rois))[:, :, np.newaxis, np.newaxis]
     return rois_blob.astype(np.float32, copy=False)
 
-# TODO(rbg): overlaps with finetuning._map_im_rois_to_feat_rois()
 def _map_im_rois_to_feat_rois(im_rois, scales):
     im_rois = im_rois.astype(np.float, copy=False)
-    widths = im_rois[:, 2] - im_rois[:, 0] + 1
-    heights = im_rois[:, 3] - im_rois[:, 1] + 1
 
-    areas = widths * heights
-    scaled_areas = areas[:, np.newaxis] * (scales[np.newaxis, :] ** 2)
-    # TODO(rbg): 227 or 224? or blah/....
-    diff_areas = np.abs(scaled_areas - 227 * 227)
-    levels = diff_areas.argmin(axis=1)[:, np.newaxis]
+    if len(scales) > 1:
+        widths = im_rois[:, 2] - im_rois[:, 0] + 1
+        heights = im_rois[:, 3] - im_rois[:, 1] + 1
+
+        areas = widths * heights
+        scaled_areas = areas[:, np.newaxis] * (scales[np.newaxis, :] ** 2)
+        diff_areas = np.abs(scaled_areas - 224 * 224)
+        levels = diff_areas.argmin(axis=1)[:, np.newaxis]
+    else:
+        levels = np.zeros((im_rois.shape[0], 1), dtype=np.int)
 
     feat_rois = np.round(im_rois * scales[levels] / conf.FEAT_STRIDE)
+
     return feat_rois, levels
 
 def _get_blobs(im, rois):
@@ -104,6 +96,7 @@ def _bbox_pred(boxes, box_deltas):
     pred_boxes[:, 2::4] = pred_ctr_x + 0.5 * pred_w
     # y2
     pred_boxes[:, 3::4] = pred_ctr_y + 0.5 * pred_h
+
     return pred_boxes
 
 def _clip_boxes(boxes, im_shape):
@@ -147,28 +140,15 @@ def im_detect(net, im, boxes):
     else:
         # use softmax estimated probabilities
         scores = blobs_out['prob'][:, :, 0, 0]
+
+    # Apply bounding-box regression deltas
     box_deltas = blobs_out['fc8_pascal_bbox'][:, :, 0, 0]
     pred_boxes = _bbox_pred(boxes, box_deltas)
     pred_boxes = _clip_boxes(pred_boxes, im.shape)
 
+    # Map scores and predictions back to the original set of boxes
     scores = scores[inv_index, :]
     pred_boxes = pred_boxes[inv_index, :]
-
-    # TODO(rbg): try variant where we predict boxes and then score those
-    # Need to compute all cls_rois and then deduplicate
-#    for i in xrange(1, scores.shape[1]):
-#        cls_rois_blob = _get_rois_blob(pred_boxes[:, i*4:(i+1)*4],
-#                                       im_scale_factors)
-#        t = Timer()
-#        t.tic()
-#        blobs_out = net.forward(data=blobs['data'].astype(np.float32,
-#                                                          copy=False),
-#                                rois=cls_rois_blob.astype(np.float32,
-#                                                          copy=False),
-#                                start='roi_pool5')
-#        print t.toc()
-#        cls_scores = blobs_out['fc8_pascal'][:, :, 0, 0]
-#        scores[:, i] = cls_scores[:, i] - cls_scores[:, 0]
 
     return scores, pred_boxes
 
@@ -271,6 +251,7 @@ def test_net(net, imdb):
             inds = np.where(all_boxes[j][i][:, -1] > thresh[j])[0]
             all_boxes[j][i] = all_boxes[j][i][inds, :]
 
+    # TODO(rbg): need to have an output directory to save results in
     with open('dets.pkl', 'wb') as f:
         cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL)
 
