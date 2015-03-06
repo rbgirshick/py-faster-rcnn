@@ -192,7 +192,8 @@ class pascal_voc(datasets.imdb):
 
         return {'boxes' : boxes,
                 'gt_classes': gt_classes,
-                'gt_overlaps' : overlaps}
+                'gt_overlaps' : overlaps,
+                'flipped' : False}
 
     def _write_voc_results_file(self, all_boxes):
         pid = os.getpid()
