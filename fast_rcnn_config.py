@@ -45,3 +45,5 @@ SNAPSHOT_ITERS  = 10000
 TEST_SCALES     = (600,)
 TEST_MAX_SIZE   = 1000
 TEST_NMS        = 0.3
+
+RNG_SEED        = 3

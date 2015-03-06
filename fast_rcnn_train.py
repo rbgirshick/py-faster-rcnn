@@ -146,6 +146,9 @@ def training_roidb(imdb):
     return roidb
 
 if __name__ == '__main__':
+    # fix the random seed for reproducibility
+    np.random.seed(conf.RNG_SEED)
+
     args = parse_args()
 
     # set up caffe
