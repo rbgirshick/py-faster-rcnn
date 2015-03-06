@@ -152,7 +152,8 @@ class pascal_voc(datasets.imdb):
             ss_roidb.append({'boxes' : boxes,
                              'gt_classes' : np.zeros((num_boxes,),
                                                       dtype=np.int32),
-                             'gt_overlaps' : overlaps})
+                             'gt_overlaps' : overlaps,
+                             'flipped' : False})
         return ss_roidb
 
     def _load_pascal_annotation(self, index):
