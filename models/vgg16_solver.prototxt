@@ -14,5 +14,5 @@ weight_decay: 0.0005
 # function
 snapshot: 0
 # We still use the snapshot prefix, though
-snapshot_prefix: "snapshots/vgg16_finetune_all_joint_bbox_reg_smoothL1_roidb3"
+snapshot_prefix: "snapshots/vgg16_fast_rcnn"
 #debug_info: true
