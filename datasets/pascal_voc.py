@@ -58,7 +58,7 @@ class pascal_voc(datasets.imdb):
                                       self._image_set + '.txt')
         assert os.path.exists(image_set_file)
         with open(image_set_file) as f:
-            image_index = tuple([x.strip() for x in f.readlines()])
+            image_index = [x.strip() for x in f.readlines()]
         return image_index
 
     def _get_default_path(self):

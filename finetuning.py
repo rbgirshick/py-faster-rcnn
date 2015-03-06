@@ -129,6 +129,8 @@ def _get_image_blob(roidb, scale_inds):
     im_scale_factors = []
     for i in xrange(num_images):
         im = cv2.imread(roidb[i]['image'])
+        if roidb[i]['flipped']:
+            im = im[:, ::-1, :]
         im = im.astype(np.float32, copy=False)
         im -= conf.PIXEL_MEANS
         im_shape = im.shape
