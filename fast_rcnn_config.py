@@ -32,6 +32,9 @@ BG_THRESH_LO    = 0.1
 # Pixel mean values (BGR order) as a (1, 1, 3) array
 PIXEL_MEANS     = np.array([[[102.9801, 115.9465, 122.7717]]])
 
+# Use horizontally-flipped images during training?
+USE_FLIPPED     = True
+
 # Stride in input image pixels at ROI pooling level (network specific)
 # 16 is true for AlexNet and VGG-16
 FEAT_STRIDE     = 16

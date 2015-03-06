@@ -155,14 +155,19 @@ if __name__ == '__main__':
         caffe.set_device(args.gpu_id)
 
     imdb_train = datasets.pascal_voc('trainval', '2007')
+    print 'Loaded dataset `{:s}` for training'.format(imdb_train.name)
 
     # enhance roidb to contain flipped examples
-    imdb_train.append_flipped_roidb()
+    if conf.USE_FLIPPED:
+        print 'Appending horizontally-flipped training examples...'
+        imdb_train.append_flipped_roidb()
 
     # enhance roidb to contain some useful derived quanties
+    print 'Indexing training data...'
     roidb_train = training_roidb(imdb_train)
 
     # enhance roidb to contain bounding-box regression targets
+    print 'Computing bounding-box regression targets...'
     means, stds = \
         bbox_regression_targets.append_bbox_regression_targets(roidb_train)
 
@@ -172,6 +177,7 @@ if __name__ == '__main__':
     if args.solver is None:
         args.solver = './model-defs/vgg16_solver.prototxt'
 
+    print 'Solving...'
     sw = SolverWrapper(args.solver, pretrained_model=CAFFE_MODEL)
     sw.bbox_means = means
     sw.bbox_stds = stds
