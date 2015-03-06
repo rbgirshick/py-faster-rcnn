@@ -46,7 +46,7 @@ def get_minibatch(roidb):
 
 def _get_bbox_regression_labels(bbox_target_data, num_classes):
     # Return (N, K * 4, 1, 1) blob of regression targets
-    # Return (N, K * 4, 1, 1) blob of Euclidean loss weights
+    # Return (N, K * 4, 1, 1) blob of loss weights
     clss = bbox_target_data[:, 0]
     bbox_targets = np.zeros((clss.size, 4 * num_classes), dtype=np.float32)
     bbox_loss_weights = np.zeros(bbox_targets.shape, dtype=np.float32)
