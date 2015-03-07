@@ -5,7 +5,7 @@ import caffe
 
 if __name__ == '__main__':
     prototxt = 'models/vgg16_bbox_reg_deploy.prototxt'
-    caffemodel = 'snapshots/vgg16_finetune_joint_flipped_iter_40000.caffemodel'
+    caffemodel = 'snapshots/vgg16_fast_rcnn_iter_40000.caffemodel'
     GPU_ID = 2
 
     caffe.set_phase_test()

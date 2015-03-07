@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-
 import fast_rcnn_config as conf
-import argparse
 import time
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,22 +10,6 @@ import bbox_regression_targets
 
 from caffe.proto import caffe_pb2
 import google.protobuf as pb2
-
-def parse_args():
-    """
-    Parse input arguments
-    """
-    parser = argparse.ArgumentParser(description='Train a fast R-CNN')
-    parser.add_argument('--gpu', dest='gpu_id', help='GPU id to use',
-                        default=0, type=int)
-    parser.add_argument('--solver', dest='solver', help='solver prototxt',
-                        default=None, type=str)
-    parser.add_argument('--epochs', dest='epochs',
-                        help='number of epoch to train',
-                        default=16, type=int)
-
-    args = parser.parse_args()
-    return args
 
 class SolverWrapper(object):
     def __init__(self, solver_prototxt, pretrained_model=None):
@@ -71,54 +52,62 @@ class SolverWrapper(object):
         self.solver.net.params['fc8_pascal_bbox'][0].data[...] = orig_0
         self.solver.net.params['fc8_pascal_bbox'][1].data[...] = orig_1
 
-# TODO(rbg): move into SolverWrapper
-def train_model(sw, roidb, max_epochs=100):
-    for epoch in xrange(max_epochs):
-        shuffled_inds = np.random.permutation(np.arange(len(roidb)))
-        lim = (len(shuffled_inds) / conf.IMS_PER_BATCH) * conf.IMS_PER_BATCH
-        shuffled_inds = shuffled_inds[0:lim]
-        for shuffled_i in xrange(0, len(shuffled_inds), conf.IMS_PER_BATCH):
-            # start_t = time.time()
-            db_inds = shuffled_inds[shuffled_i:shuffled_i + conf.IMS_PER_BATCH]
-            minibatch_db = [roidb[i] for i in db_inds]
-            im_blob, rois_blob, labels_blob, \
-                bbox_targets_blob, bbox_loss_weights_blob = \
-                    finetuning.get_minibatch(minibatch_db)
+    def train_model(self, roidb, max_epochs=100):
+        for epoch in xrange(max_epochs):
+            shuffled_inds = np.random.permutation(np.arange(len(roidb)))
+            lim = (len(shuffled_inds) / conf.IMS_PER_BATCH) * conf.IMS_PER_BATCH
+            shuffled_inds = shuffled_inds[0:lim]
+            for shuffled_i in xrange(0, len(shuffled_inds), conf.IMS_PER_BATCH):
+                db_inds = shuffled_inds[shuffled_i:shuffled_i + conf.IMS_PER_BATCH]
+                minibatch_db = [roidb[i] for i in db_inds]
+                im_blob, rois_blob, labels_blob, \
+                    bbox_targets_blob, bbox_loss_weights_blob = \
+                        finetuning.get_minibatch(minibatch_db)
 
-            # Reshape net's input blobs
-            base_shape = im_blob.shape
-            num_rois = rois_blob.shape[0]
-            sw.solver.net.blobs['data'].reshape(base_shape[0], base_shape[1],
-                                                base_shape[2], base_shape[3])
-            sw.solver.net.blobs['rois'].reshape(num_rois, 5, 1, 1)
-            sw.solver.net.blobs['labels'].reshape(num_rois, 1, 1, 1)
-            sw.solver.net.blobs['bbox_targets'] \
-                .reshape(num_rois, bbox_targets_blob.shape[1], 1, 1)
-            sw.solver.net.blobs['bbox_loss_weights'] \
-                .reshape(num_rois, bbox_loss_weights_blob.shape[1], 1, 1)
-            # Copy data into net's input blobs
-            sw.solver.net.blobs['data'].data[...] = \
-                im_blob.astype(np.float32, copy=False)
-            sw.solver.net.blobs['rois'].data[...] = \
-                rois_blob[:, :, np.newaxis, np.newaxis] \
-                .astype(np.float32, copy=False)
-            sw.solver.net.blobs['labels'].data[...] = \
-                labels_blob[:, np.newaxis, np.newaxis, np.newaxis] \
-                .astype(np.float32, copy=False)
-            sw.solver.net.blobs['bbox_targets'].data[...] = \
-                bbox_targets_blob[:, :, np.newaxis, np.newaxis] \
-                .astype(np.float32, copy=False)
-            sw.solver.net.blobs['bbox_loss_weights'].data[...] = \
-                bbox_loss_weights_blob[:, :, np.newaxis, np.newaxis] \
-                .astype(np.float32, copy=False)
+                # Reshape net's input blobs
+                net = self.solver.net
 
-            sw.solver.step(1)
-            if sw.solver.iter % conf.SNAPSHOT_ITERS == 0:
-                sw.snapshot()
+                base_shape = im_blob.shape
+                num_rois = rois_blob.shape[0]
+                bbox_shape = bbox_targets_blob.shape[1]
 
-def training_roidb(imdb):
+                net.blobs['data'].reshape(base_shape[0], base_shape[1],
+                                          base_shape[2], base_shape[3])
+                net.blobs['rois'].reshape(num_rois, 5, 1, 1)
+                net.blobs['labels'].reshape(num_rois, 1, 1, 1)
+                net.blobs['bbox_targets'].reshape(num_rois, bbox_shape, 1, 1)
+                net.blobs['bbox_loss_weights'].reshape(num_rois, bbox_shape,
+                                                       1, 1)
+
+                # Copy data into net's input blobs
+                net.blobs['data'].data[...] = \
+                    im_blob.astype(np.float32, copy=False)
+
+                net.blobs['rois'].data[...] = \
+                    rois_blob[:, :, np.newaxis, np.newaxis] \
+                    .astype(np.float32, copy=False)
+
+                net.blobs['labels'].data[...] = \
+                    labels_blob[:, np.newaxis, np.newaxis, np.newaxis] \
+                    .astype(np.float32, copy=False)
+
+                net.blobs['bbox_targets'].data[...] = \
+                    bbox_targets_blob[:, :, np.newaxis, np.newaxis] \
+                    .astype(np.float32, copy=False)
+
+                net.blobs['bbox_loss_weights'].data[...] = \
+                    bbox_loss_weights_blob[:, :, np.newaxis, np.newaxis] \
+                    .astype(np.float32, copy=False)
+
+                # Make one SGD update
+                self.solver.step(1)
+
+                if self.solver.iter % conf.SNAPSHOT_ITERS == 0:
+                    self.snapshot()
+
+def prepare_training_roidb(imdb):
     """
-    Enriched the imdb's roidb by adding some derived quantities that
+    Enrich the imdb's roidb by adding some derived quantities that
     are useful for training. This function precomputes the maximum
     overlap, taken over ground-truth boxes, between each ROI and
     each ground-truth box. The class with maximum overlap is also
@@ -145,45 +134,29 @@ def training_roidb(imdb):
 
     return roidb
 
-if __name__ == '__main__':
-    # fix the random seed for reproducibility
-    np.random.seed(conf.RNG_SEED)
-
-    args = parse_args()
-
-    # set up caffe
-    caffe.set_phase_train()
-    caffe.set_mode_gpu()
-    if args.gpu_id is not None:
-        caffe.set_device(args.gpu_id)
-
-    imdb_train = datasets.pascal_voc('trainval', '2007')
-    print 'Loaded dataset `{:s}` for training'.format(imdb_train.name)
-
+def train_net(solver_prototxt, imdb, pretrained_model=None, epochs=16):
     # enhance roidb to contain flipped examples
     if conf.USE_FLIPPED:
         print 'Appending horizontally-flipped training examples...'
-        imdb_train.append_flipped_roidb()
+        imdb.append_flipped_roidb()
+        print 'done'
 
     # enhance roidb to contain some useful derived quanties
-    print 'Indexing training data...'
-    roidb_train = training_roidb(imdb_train)
+    print 'Preparing training data...'
+    roidb = prepare_training_roidb(imdb)
+    print 'done'
 
     # enhance roidb to contain bounding-box regression targets
     print 'Computing bounding-box regression targets...'
     means, stds = \
-        bbox_regression_targets.append_bbox_regression_targets(roidb_train)
+        bbox_regression_targets.append_bbox_regression_targets(roidb)
+    print 'done'
 
-    # CAFFE_MODEL = '/data/reference_caffe_nets/ilsvrc_2012_train_iter_310k'
-    # SOLVER_DEF = './models/pyramid_solver.prototxt'
-    CAFFE_MODEL = '/data/reference_caffe_nets/VGG_ILSVRC_16_layers.caffemodel'
-    if args.solver is None:
-        args.solver = './models/vgg16_solver.prototxt'
-
-    print 'Solving...'
-    sw = SolverWrapper(args.solver, pretrained_model=CAFFE_MODEL)
+    sw = SolverWrapper(solver_prototxt, pretrained_model=pretrained_model)
     sw.bbox_means = means
     sw.bbox_stds = stds
 
-    train_model(sw, roidb_train, max_epochs=args.epochs)
+    print 'Solving...'
+    sw.train_model(roidb, max_epochs=epochs)
     sw.snapshot()
+    print 'done solving'
