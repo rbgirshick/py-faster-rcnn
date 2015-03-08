@@ -6,17 +6,16 @@ sys.path.insert(0, caffe_path)
 
 # Scales used in the SPP-net paper
 # SCALES          = (480, 576, 688, 864, 1200)
-SCALES          = (480, 576, 600)
+SCALES          = (600,)
 
 # Max pixel size of a scaled input image
-# MAX_SIZE        = 2000
 MAX_SIZE        = 1000
 
 # Images per batch
-IMS_PER_BATCH   = 2 # 4
+IMS_PER_BATCH   = 2
 
 # Minibatch size
-BATCH_SIZE      = 128 # 128
+BATCH_SIZE      = 128
 
 # Fraction of minibatch that is foreground labeled (class > 0)
 FG_FRACTION     = 0.25
