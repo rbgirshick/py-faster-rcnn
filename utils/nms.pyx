@@ -1,11 +1,10 @@
 """
 Fast Cython code for NMS of detection bounding boxes.
 
-Note: I've experimented with sticking to ints for the bboxes, and did
-not see any speedup over just casting to floats.
-
 Originally written by Kai Wang for the plex project:
 https://github.com/shiaokai/plex
+
+See nms.pyx.license.txt.
 """
 import numpy as np
 cimport numpy as np
