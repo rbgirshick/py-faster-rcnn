@@ -30,8 +30,10 @@ class pascal_voc(datasets.imdb):
         # Default to roidb handler
         self._roidb_handler = self.selective_search_roidb
 
-        assert os.path.exists(self._devkit_path)
-        assert os.path.exists(self._base_path)
+        assert os.path.exists(self._devkit_path), \
+                'VOCdevkit path does not exist: {}'.format(self._devkit_path)
+        assert os.path.exists(self._base_path), \
+                'Path does not exist: {}'.format(self._base_path)
 
     def image_path_at(self, i):
         """
@@ -45,7 +47,8 @@ class pascal_voc(datasets.imdb):
         """
         image_path = os.path.join(self._base_path, 'JPEGImages',
                                   index + self._image_ext)
-        assert os.path.exists(image_path)
+        assert os.path.exists(image_path), \
+                'Path does not exist: {}'.format(image_path)
         return image_path
 
     def _load_image_set_index(self):
@@ -56,7 +59,8 @@ class pascal_voc(datasets.imdb):
         # self._devkit_path + /VOCdevkit2007/VOC2007/ImageSets/Main/val.txt
         image_set_file = os.path.join(self._base_path, 'ImageSets', 'Main',
                                       self._image_set + '.txt')
-        assert os.path.exists(image_set_file)
+        assert os.path.exists(image_set_file), \
+                'Path does not exist: {}'.format(image_set_file)
         with open(image_set_file) as f:
             image_index = [x.strip() for x in f.readlines()]
         return image_index
@@ -130,7 +134,8 @@ class pascal_voc(datasets.imdb):
     def _load_selective_search_roidb(self, gt_roidb):
         filename = os.path.join(self.cache_path, 'selective_search_data',
                                 self.name + '.mat')
-        assert os.path.exists(filename)
+        assert os.path.exists(filename), \
+                'Selective search data not found at: {}'.format(filename)
         raw_data = sio.loadmat(filename)
 
         num_images = raw_data['boxes'].ravel().shape[0]
