@@ -1,5 +1,7 @@
 import os
 import PIL
+import utils.cython_bbox
+import numpy as np
 
 class imdb(object):
     def __init__(self, name):
@@ -53,6 +55,10 @@ class imdb(object):
             os.path.dirname(__file__),
             'cache'))
 
+    @property
+    def num_images(self):
+      return len(self.image_index)
+
     def image_path_at(self, i):
         raise NotImplementedError
 
@@ -71,7 +77,7 @@ class imdb(object):
         raise NotImplementedError
 
     def append_flipped_roidb(self):
-        num_images = len(self.image_index)
+        num_images = self.num_images
         widths = [PIL.Image.open(self.image_path_at(i)).size[0]
                   for i in xrange(num_images)]
         for i in xrange(num_images):
@@ -87,3 +93,30 @@ class imdb(object):
                      'flipped' : True}
             self.roidb.append(entry)
         self._image_index = self._image_index * 2
+
+    def eval_recall(self, candidate_boxes, ar_thresh=0.5):
+        # Record max overlap value for each gt box
+        # Return vector of overlap values
+        gt_overlaps = np.zeros(0)
+        for i in xrange(self.num_images):
+            gt_inds = np.where(self.roidb[i]['gt_classes'] > 0)[0]
+            gt_boxes = self.roidb[i]['boxes'][gt_inds, :]
+
+            boxes = candidate_boxes[i]
+            if boxes.shape[0] == 0:
+                continue
+            overlaps = \
+                    utils.cython_bbox.bbox_overlaps(boxes.astype(np.float),
+                                                    gt_boxes.astype(np.float))
+            gt_overlaps = np.hstack((gt_overlaps, overlaps.max(axis=0)))
+
+        num_pos = gt_overlaps.size
+        gt_overlaps = np.sort(gt_overlaps)
+        step = 0.001
+        thresholds = np.minimum(np.arange(0.5, 1.0 + step, step), 1.0)
+        recalls = np.zeros_like(thresholds)
+        for i, t in enumerate(thresholds):
+            recalls[i] = (gt_overlaps >= t).sum() / float(num_pos)
+        ar = 2 * np.trapz(recalls, thresholds)
+
+        return ar, gt_overlaps
