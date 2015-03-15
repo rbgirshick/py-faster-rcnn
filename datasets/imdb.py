@@ -12,6 +12,8 @@ class imdb(object):
         self._obj_proposer = 'selective_search'
         self._roidb = None
         self._roidb_handler = self.default_roidb
+        # Use this dict for storing dataset specific config options
+        self.config = {}
 
     @property
     def name(self):

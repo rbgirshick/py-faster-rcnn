@@ -30,6 +30,10 @@ class pascal_voc(datasets.imdb):
         # Default to roidb handler
         self._roidb_handler = self.selective_search_roidb
 
+        # PASCAL specific config options
+        self.config = {'cleanup'  : True,
+                       'use_salt' : True}
+
         assert os.path.exists(self._devkit_path)
         assert os.path.exists(self._base_path)
 
@@ -197,41 +201,49 @@ class pascal_voc(datasets.imdb):
                 'flipped' : False}
 
     def _write_voc_results_file(self, all_boxes):
-        pid = os.getpid()
+        use_salt = self.config['use_salt']
+        comp_id = 'comp4'
+        if use_salt:
+            comp_id += '-{}'.format(os.getpid())
+
         # VOCdevkit/results/VOC2007/Main/comp4-44503_det_test_aeroplane.txt
         path = os.path.join(self._devkit_path, 'results', 'VOC' + self._year,
-                            'Main', 'comp4-{}_'.format(pid))
+                            'Main', comp_id + '_')
         for cls_ind, cls in enumerate(self.classes):
             if cls == '__background__':
                 continue
             print 'Writing {} VOC results file'.format(cls)
-            filename = path + 'det_test_' + cls + '.txt'
+            filename = path + 'det_' + self._image_set + '_' + cls + '.txt'
             with open(filename, 'wt') as f:
                 for im_ind, index in enumerate(self.image_index):
                     dets = all_boxes[cls_ind][im_ind]
                     if dets == []:
                         continue
                     # the VOCdevkit expects 1-based indices
-                    dets[:, :4] += 1
                     for k in xrange(dets.shape[0]):
                         f.write('{:s} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.
                                 format(index, dets[k, -1],
-                                       dets[k, 0], dets[k, 1],
-                                       dets[k, 2], dets[k, 3]))
-        return pid
+                                       dets[k, 0] + 1, dets[k, 1] + 1,
+                                       dets[k, 2] + 1, dets[k, 3] + 1))
+        return comp_id
 
-    def _do_matlab_eval(self, pid, rm_results=True):
+    def _do_matlab_eval(self, comp_id):
+        rm_results = self.config['cleanup']
+
         path = os.path.join(os.path.dirname(__file__),
                             'VOCdevkit-matlab-wrapper')
         cmd = 'cd {} && '.format(path)
         cmd += 'matlab -nodisplay -nodesktop '
-        cmd += '-r "voc_eval(\'{:s}\', {:d}, {:d}); quit;"' \
-               .format(self._devkit_path, pid, int(rm_results))
+        cmd += '-r "dbstop if error; '
+        cmd += 'voc_eval(\'{:s}\', \'{:s}\', \'{:s}\', {:d}); quit;"' \
+               .format(self._devkit_path, comp_id,
+                       self._image_set, int(rm_results))
+        print('Running:\n{}'.format(cmd))
         status = subprocess.call(cmd, shell=True)
 
     def evaluate_detections(self, all_boxes):
-        pid = self._write_voc_results_file(all_boxes)
-        self._do_matlab_eval(pid)
+        comp_id = self._write_voc_results_file(all_boxes)
+        self._do_matlab_eval(comp_id)
 
 if __name__ == '__main__':
     d = datasets.pascal_voc('trainval', '2007')
