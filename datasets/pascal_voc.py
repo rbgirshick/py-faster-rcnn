@@ -232,7 +232,7 @@ class pascal_voc(datasets.imdb):
                                        dets[k, 2] + 1, dets[k, 3] + 1))
         return comp_id
 
-    def _do_matlab_eval(self, comp_id):
+    def _do_matlab_eval(self, comp_id, output_dir='output'):
         rm_results = self.config['cleanup']
 
         path = os.path.join(os.path.dirname(__file__),
@@ -240,15 +240,15 @@ class pascal_voc(datasets.imdb):
         cmd = 'cd {} && '.format(path)
         cmd += 'matlab -nodisplay -nodesktop '
         cmd += '-r "dbstop if error; '
-        cmd += 'voc_eval(\'{:s}\', \'{:s}\', \'{:s}\', {:d}); quit;"' \
+        cmd += 'voc_eval(\'{:s}\',\'{:s}\',\'{:s}\',\'{:s}\',{:d}); quit;"' \
                .format(self._devkit_path, comp_id,
-                       self._image_set, int(rm_results))
+                       self._image_set, output_dir, int(rm_results))
         print('Running:\n{}'.format(cmd))
         status = subprocess.call(cmd, shell=True)
 
-    def evaluate_detections(self, all_boxes):
+    def evaluate_detections(self, all_boxes, output_dir):
         comp_id = self._write_voc_results_file(all_boxes)
-        self._do_matlab_eval(comp_id)
+        self._do_matlab_eval(comp_id, output_dir)
 
 if __name__ == '__main__':
     d = datasets.pascal_voc('trainval', '2007')

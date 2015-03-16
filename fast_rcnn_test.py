@@ -10,6 +10,7 @@ import utils.cython_nms
 import cPickle
 import heapq
 import utils.blob
+import os
 
 def _get_image_blob(im):
     im_pyra = []
@@ -204,6 +205,13 @@ def test_net(net, imdb):
     all_boxes = [[[] for _ in xrange(num_images)]
                  for _ in xrange(imdb.num_classes)]
 
+    # Output directory will be something like:
+    #   output/vgg16_fast_rcnn_iter_40000/voc_2007_test/
+    output_dir = os.path.join(os.path.dirname(__file__), 'output',
+                              net.name, imdb.name)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     # timers
     _t = {'im_detect' : Timer(), 'misc' : Timer()}
 
@@ -251,12 +259,12 @@ def test_net(net, imdb):
             inds = np.where(all_boxes[j][i][:, -1] > thresh[j])[0]
             all_boxes[j][i] = all_boxes[j][i][inds, :]
 
-    # TODO(rbg): need to have an output directory to save results in
-    with open('dets.pkl', 'wb') as f:
+    det_file = os.path.join(output_dir, 'detections.pkl')
+    with open(det_file, 'wb') as f:
         cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL)
 
     print 'Applying NMS to all detections'
     nms_dets = _apply_nms(all_boxes, conf.TEST_NMS)
 
     print 'Evaluating detections'
-    imdb.evaluate_detections(nms_dets)
+    imdb.evaluate_detections(nms_dets, output_dir)

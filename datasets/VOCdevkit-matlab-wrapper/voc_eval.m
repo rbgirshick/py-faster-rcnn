@@ -1,11 +1,11 @@
-function res = voc_eval(path, comp_id, test_set, rm_res)
+function res = voc_eval(path, comp_id, test_set, output_dir, rm_res)
 
 VOCopts = get_voc_opts(path);
 VOCopts.testset = test_set;
 
 for i = 1:length(VOCopts.classes)
   cls = VOCopts.classes{i};
-  res(i) = voc_eval_cls(cls, VOCopts, comp_id, rm_res);
+  res(i) = voc_eval_cls(cls, VOCopts, comp_id, output_dir, rm_res);
 end
 
 fprintf('\n~~~~~~~~~~~~~~~~~~~~\n');
@@ -15,7 +15,7 @@ disp(aps);
 disp(mean(aps));
 fprintf('~~~~~~~~~~~~~~~~~~~~\n');
 
-function res = voc_eval_cls(cls, VOCopts, comp_id, rm_res)
+function res = voc_eval_cls(cls, VOCopts, comp_id, output_dir, rm_res)
 
 test_set = VOCopts.testset;
 year = VOCopts.dataset(4:end);
@@ -36,12 +36,12 @@ if do_eval
   [recall, prec, ap] = VOCevaldet(VOCopts, comp_id, cls, true);
   ap_auc = xVOCap(recall, prec);
 
-  % % force plot limits
-  % ylim([0 1]);
-  % xlim([0 1]);
+  % force plot limits
+  ylim([0 1]);
+  xlim([0 1]);
 
-  % print(gcf, '-djpeg', '-r0', ...
-  %     [conf.cache_dir cls '_pr_' imdb.name suffix '.jpg']);
+  print(gcf, '-djpeg', '-r0', ...
+        [output_dir '/' cls '_pr.jpg']);
 end
 fprintf('!!! %s : %.4f %.4f\n', cls, ap, ap_auc);
 
@@ -50,8 +50,8 @@ res.prec = prec;
 res.ap = ap;
 res.ap_auc = ap_auc;
 
-%save([conf.cache_dir cls '_pr_' imdb.name '_py'], ...
-%    'res', 'recall', 'prec', 'ap', 'ap_auc');
+save([output_dir '/' cls '_pr.mat'], ...
+     'res', 'recall', 'prec', 'ap', 'ap_auc');
 
 if rm_res
   delete(res_fn);

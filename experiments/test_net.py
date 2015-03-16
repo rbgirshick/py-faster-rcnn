@@ -4,6 +4,7 @@ import fast_rcnn_test
 import caffe
 import argparse
 import sys
+import os
 
 def parse_args():
     """
@@ -33,6 +34,7 @@ if __name__ == '__main__':
     caffe.set_mode_gpu()
     caffe.set_device(args.gpu_id)
     net = caffe.Net(args.prototxt, args.caffemodel, caffe.TEST)
+    net.name = os.path.splitext(os.path.basename(args.caffemodel))[0]
 
     import datasets.pascal_voc
     imdb = datasets.pascal_voc('test', '2007')
