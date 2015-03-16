@@ -1,347 +1,393 @@
 name: "VGG_ILSVRC_16_layers"
+
 input: "data"
-input_dim: 1
-input_dim: 3
-input_dim: 224
-input_dim: 224
+input_shape {
+  dim: 1
+  dim: 3
+  dim: 224
+  dim: 224
+}
+
 input: "rois"
-input_dim: 1 # to be changed on-the-fly
-input_dim: 5 # [level, x1, y1, x2, y2] zero-based indexing
-input_dim: 1
-input_dim: 1
-layers {
+input_shape {
+  dim: 1 # to be changed on-the-fly to num ROIs
+  dim: 5 # [batch ind, x1, y1, x2, y2] zero-based indexing
+  dim: 1
+  dim: 1
+}
+
+layer {
+  name: "conv1_1"
+  type: "Convolution"
   bottom: "data"
   top: "conv1_1"
-  name: "conv1_1"
-  type: CONVOLUTION
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 64
     pad: 1
     kernel_size: 3
   }
-  # Learning parameters
-  blobs_lr: 0
-  blobs_lr: 0
-  weight_decay: 0
-  weight_decay: 0
 }
-layers {
+layer {
+  name: "relu1_1"
+  type: "ReLU"
   bottom: "conv1_1"
   top: "conv1_1"
-  name: "relu1_1"
-  type: RELU
 }
-layers {
+layer {
+  name: "conv1_2"
+  type: "Convolution"
   bottom: "conv1_1"
   top: "conv1_2"
-  name: "conv1_2"
-  type: CONVOLUTION
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 64
     pad: 1
     kernel_size: 3
   }
-  # Learning parameters
-  blobs_lr: 0
-  blobs_lr: 0
-  weight_decay: 0
-  weight_decay: 0
 }
-layers {
+layer {
+  name: "relu1_2"
+  type: "ReLU"
   bottom: "conv1_2"
   top: "conv1_2"
-  name: "relu1_2"
-  type: RELU
 }
-layers {
+layer {
+  name: "pool1"
+  type: "Pooling"
   bottom: "conv1_2"
   top: "pool1"
-  name: "pool1"
-  type: POOLING
   pooling_param {
     pool: MAX
     kernel_size: 2
     stride: 2
   }
 }
-layers {
+layer {
+  name: "conv2_1"
+  type: "Convolution"
   bottom: "pool1"
   top: "conv2_1"
-  name: "conv2_1"
-  type: CONVOLUTION
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 128
     pad: 1
     kernel_size: 3
   }
-  # Learning parameters
-  blobs_lr: 0
-  blobs_lr: 0
-  weight_decay: 0
-  weight_decay: 0
 }
-layers {
+layer {
+  name: "relu2_1"
+  type: "ReLU"
   bottom: "conv2_1"
   top: "conv2_1"
-  name: "relu2_1"
-  type: RELU
 }
-layers {
+layer {
+  name: "conv2_2"
+  type: "Convolution"
   bottom: "conv2_1"
   top: "conv2_2"
-  name: "conv2_2"
-  type: CONVOLUTION
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 128
     pad: 1
     kernel_size: 3
   }
-  # Learning parameters
-  blobs_lr: 0
-  blobs_lr: 0
-  weight_decay: 0
-  weight_decay: 0
 }
-layers {
+layer {
+  name: "relu2_2"
+  type: "ReLU"
   bottom: "conv2_2"
   top: "conv2_2"
-  name: "relu2_2"
-  type: RELU
 }
-layers {
+layer {
+  name: "pool2"
+  type: "Pooling"
   bottom: "conv2_2"
   top: "pool2"
-  name: "pool2"
-  type: POOLING
   pooling_param {
     pool: MAX
     kernel_size: 2
     stride: 2
   }
 }
-layers {
+layer {
+  name: "conv3_1"
+  type: "Convolution"
   bottom: "pool2"
   top: "conv3_1"
-  name: "conv3_1"
-  type: CONVOLUTION
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 256
     pad: 1
     kernel_size: 3
   }
-  # Learning parameters
-  blobs_lr: 0
-  blobs_lr: 0
-  weight_decay: 0
-  weight_decay: 0
 }
-layers {
+layer {
+  name: "relu3_1"
+  type: "ReLU"
   bottom: "conv3_1"
   top: "conv3_1"
-  name: "relu3_1"
-  type: RELU
 }
-layers {
+layer {
+  name: "conv3_2"
+  type: "Convolution"
   bottom: "conv3_1"
   top: "conv3_2"
-  name: "conv3_2"
-  type: CONVOLUTION
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 256
     pad: 1
     kernel_size: 3
   }
-  # Learning parameters
-  blobs_lr: 0
-  blobs_lr: 0
-  weight_decay: 0
-  weight_decay: 0
 }
-layers {
+layer {
+  name: "relu3_2"
+  type: "ReLU"
   bottom: "conv3_2"
   top: "conv3_2"
-  name: "relu3_2"
-  type: RELU
 }
-layers {
+layer {
+  name: "conv3_3"
+  type: "Convolution"
   bottom: "conv3_2"
   top: "conv3_3"
-  name: "conv3_3"
-  type: CONVOLUTION
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 256
     pad: 1
     kernel_size: 3
   }
-  # Learning parameters
-  blobs_lr: 0
-  blobs_lr: 0
-  weight_decay: 0
-  weight_decay: 0
 }
-layers {
+layer {
+  name: "relu3_3"
+  type: "ReLU"
   bottom: "conv3_3"
   top: "conv3_3"
-  name: "relu3_3"
-  type: RELU
 }
-layers {
+layer {
+  name: "pool3"
+  type: "Pooling"
   bottom: "conv3_3"
   top: "pool3"
-  name: "pool3"
-  type: POOLING
   pooling_param {
     pool: MAX
     kernel_size: 2
     stride: 2
   }
 }
-layers {
+layer {
+  name: "conv4_1"
+  type: "Convolution"
   bottom: "pool3"
   top: "conv4_1"
-  name: "conv4_1"
-  type: CONVOLUTION
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 512
     pad: 1
     kernel_size: 3
   }
-  # Learning parameters
-  blobs_lr: 0
-  blobs_lr: 0
-  weight_decay: 0
-  weight_decay: 0
 }
-layers {
+layer {
+  name: "relu4_1"
+  type: "ReLU"
   bottom: "conv4_1"
   top: "conv4_1"
-  name: "relu4_1"
-  type: RELU
 }
-layers {
+layer {
+  name: "conv4_2"
+  type: "Convolution"
   bottom: "conv4_1"
   top: "conv4_2"
-  name: "conv4_2"
-  type: CONVOLUTION
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 512
     pad: 1
     kernel_size: 3
   }
-  # Learning parameters
-  blobs_lr: 0
-  blobs_lr: 0
-  weight_decay: 0
-  weight_decay: 0
 }
-layers {
+layer {
+  name: "relu4_2"
+  type: "ReLU"
   bottom: "conv4_2"
   top: "conv4_2"
-  name: "relu4_2"
-  type: RELU
 }
-layers {
+layer {
+  name: "conv4_3"
+  type: "Convolution"
   bottom: "conv4_2"
   top: "conv4_3"
-  name: "conv4_3"
-  type: CONVOLUTION
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 512
     pad: 1
     kernel_size: 3
   }
-  # Learning parameters
-  blobs_lr: 0
-  blobs_lr: 0
-  weight_decay: 0
-  weight_decay: 0
 }
-layers {
+layer {
+  name: "relu4_3"
+  type: "ReLU"
   bottom: "conv4_3"
   top: "conv4_3"
-  name: "relu4_3"
-  type: RELU
 }
-layers {
+layer {
+  name: "pool4"
+  type: "Pooling"
   bottom: "conv4_3"
   top: "pool4"
-  name: "pool4"
-  type: POOLING
   pooling_param {
     pool: MAX
     kernel_size: 2
     stride: 2
   }
 }
-layers {
+layer {
+  name: "conv5_1"
+  type: "Convolution"
   bottom: "pool4"
   top: "conv5_1"
-  name: "conv5_1"
-  type: CONVOLUTION
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 512
     pad: 1
     kernel_size: 3
   }
-  # Learning parameters
-  blobs_lr: 0
-  blobs_lr: 0
-  weight_decay: 0
-  weight_decay: 0
 }
-layers {
+layer {
+  name: "relu5_1"
+  type: "ReLU"
   bottom: "conv5_1"
   top: "conv5_1"
-  name: "relu5_1"
-  type: RELU
 }
-layers {
+layer {
+  name: "conv5_2"
+  type: "Convolution"
   bottom: "conv5_1"
   top: "conv5_2"
-  name: "conv5_2"
-  type: CONVOLUTION
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 512
     pad: 1
     kernel_size: 3
   }
-  # Learning parameters
-  blobs_lr: 0
-  blobs_lr: 0
-  weight_decay: 0
-  weight_decay: 0
 }
-layers {
+layer {
+  name: "relu5_2"
+  type: "ReLU"
   bottom: "conv5_2"
   top: "conv5_2"
-  name: "relu5_2"
-  type: RELU
 }
-layers {
+layer {
+  name: "conv5_3"
+  type: "Convolution"
   bottom: "conv5_2"
   top: "conv5_3"
-  name: "conv5_3"
-  type: CONVOLUTION
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 512
     pad: 1
     kernel_size: 3
   }
-  # Learning parameters
-  blobs_lr: 0
-  blobs_lr: 0
-  weight_decay: 0
-  weight_decay: 0
 }
-layers {
+layer {
+  name: "relu5_3"
+  type: "ReLU"
   bottom: "conv5_3"
   top: "conv5_3"
-  name: "relu5_3"
-  type: RELU
 }
-layers {
+layer {
   name: "roi_pool5"
-  type: ROI_POOLING
+  type: "ROIPooling"
   bottom: "conv5_3"
   bottom: "rois"
   top: "pool5"
@@ -350,69 +396,83 @@ layers {
     pooled_h: 7
   }
 }
-layers {
+layer {
+  name: "fc6"
+  type: "InnerProduct"
   bottom: "pool5"
   top: "fc6"
-  name: "fc6"
-  type: INNER_PRODUCT
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   inner_product_param {
     num_output: 4096
   }
-  # Learning parameters
-  blobs_lr: 1
-  blobs_lr: 2
-  weight_decay: 1
-  weight_decay: 0
 }
-layers {
-  bottom: "fc6"
-  top: "fc6"
+layer {
   name: "relu6"
-  type: RELU
-}
-layers {
+  type: "ReLU"
   bottom: "fc6"
   top: "fc6"
+}
+layer {
   name: "drop6"
-  type: DROPOUT
+  type: "Dropout"
+  bottom: "fc6"
+  top: "fc6"
   dropout_param {
     dropout_ratio: 0.5
   }
 }
-layers {
+layer {
+  name: "fc7"
+  type: "InnerProduct"
   bottom: "fc6"
   top: "fc7"
-  name: "fc7"
-  type: INNER_PRODUCT
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   inner_product_param {
     num_output: 4096
   }
-  # Learning parameters
-  blobs_lr: 1
-  blobs_lr: 2
-  weight_decay: 1
-  weight_decay: 0
 }
-layers {
-  bottom: "fc7"
-  top: "fc7"
+layer {
   name: "relu7"
-  type: RELU
-}
-layers {
+  type: "ReLU"
   bottom: "fc7"
   top: "fc7"
+}
+layer {
   name: "drop7"
-  type: DROPOUT
+  type: "Dropout"
+  bottom: "fc7"
+  top: "fc7"
   dropout_param {
     dropout_ratio: 0.5
   }
 }
-layers {
-  name: "fc8_pascal"
-  type: INNER_PRODUCT
+layer {
+  name: "cls_score"
+  type: "InnerProduct"
   bottom: "fc7"
-  top: "fc8_pascal"
+  top: "cls_score"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   inner_product_param {
     num_output: 21
     weight_filler {
@@ -424,37 +484,35 @@ layers {
       value: 0
     }
   }
-  # Learning parameters
-  blobs_lr: 1
-  blobs_lr: 2
-  weight_decay: 1
-  weight_decay: 0
 }
-layers {
-  name: "prob"
-  type: SOFTMAX
-  bottom: "fc8_pascal"
-  top: "prob"
-}
-layers {
-  name: "fc8_pascal_bbox"
-  type: INNER_PRODUCT
+layer {
+  name: "bbox_pred"
+  type: "InnerProduct"
   bottom: "fc7"
-  top: "fc8_pascal_bbox"
+  top: "bbox_pred"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   inner_product_param {
     num_output: 84
     weight_filler {
       type: "gaussian"
-      std: 0.01
+      std: 0.001
     }
     bias_filler {
       type: "constant"
       value: 0
     }
   }
-  # Learning parameters
-  blobs_lr: 1
-  blobs_lr: 2
-  weight_decay: 1
-  weight_decay: 0
+}
+layer {
+  name: "cls_prob"
+  type: "Softmax"
+  bottom: "cls_score"
+  top: "cls_prob"
 }
