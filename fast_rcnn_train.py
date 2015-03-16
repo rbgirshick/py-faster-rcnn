@@ -34,14 +34,14 @@ class SolverWrapper(object):
         means = self.bbox_means.ravel()[np.newaxis, np.newaxis, np.newaxis, :]
 
         # save original values
-        orig_0 = self.solver.net.params['fc8_pascal_bbox'][0].data.copy()
-        orig_1 = self.solver.net.params['fc8_pascal_bbox'][1].data.copy()
+        orig_0 = self.solver.net.params['bbox_pred'][0].data.copy()
+        orig_1 = self.solver.net.params['bbox_pred'][1].data.copy()
 
         # scale and shift with bbox reg unnormalization; then save snapshot
-        self.solver.net.params['fc8_pascal_bbox'][0].data[...] = \
-                self.solver.net.params['fc8_pascal_bbox'][0].data * stds
-        self.solver.net.params['fc8_pascal_bbox'][1].data[...] = \
-                self.solver.net.params['fc8_pascal_bbox'][1].data + means
+        self.solver.net.params['bbox_pred'][0].data[...] = \
+                self.solver.net.params['bbox_pred'][0].data * stds
+        self.solver.net.params['bbox_pred'][1].data[...] = \
+                self.solver.net.params['bbox_pred'][1].data + means
 
         filename = self.solver_param.snapshot_prefix + \
               '_iter_{:d}'.format(self.solver.iter) + '.caffemodel'
@@ -49,8 +49,8 @@ class SolverWrapper(object):
         print 'Wrote snapshot to: {:s}'.format(filename)
 
         # restore net to original state
-        self.solver.net.params['fc8_pascal_bbox'][0].data[...] = orig_0
-        self.solver.net.params['fc8_pascal_bbox'][1].data[...] = orig_1
+        self.solver.net.params['bbox_pred'][0].data[...] = orig_0
+        self.solver.net.params['bbox_pred'][1].data[...] = orig_1
 
     def train_model(self, roidb, max_epochs=100):
         for epoch in xrange(max_epochs):

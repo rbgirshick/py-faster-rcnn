@@ -134,15 +134,15 @@ def im_detect(net, im, boxes):
                             rois=blobs['rois'].astype(np.float32, copy=False))
     if conf.TEST_BINARY:
         # simulate binary logistic regression
-        scores = blobs_out['fc8_pascal'][:, :, 0, 0]
+        scores = blobs_out['cls_score']
         # Return scores as fg - bg
         scores = scores - scores[:, 0][:, np.newaxis]
     else:
         # use softmax estimated probabilities
-        scores = blobs_out['prob'][:, :, 0, 0]
+        scores = blobs_out['cls_prob']
 
     # Apply bounding-box regression deltas
-    box_deltas = blobs_out['fc8_pascal_bbox'][:, :, 0, 0]
+    box_deltas = blobs_out['bbox_pred']
     pred_boxes = _bbox_pred(boxes, box_deltas)
     pred_boxes = _clip_boxes(pred_boxes, im.shape)
 

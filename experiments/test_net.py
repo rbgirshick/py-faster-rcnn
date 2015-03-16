@@ -30,10 +30,9 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    caffe.set_phase_test()
     caffe.set_mode_gpu()
     caffe.set_device(args.gpu_id)
-    net = caffe.Net(args.prototxt, args.caffemodel)
+    net = caffe.Net(args.prototxt, args.caffemodel, caffe.TEST)
 
     import datasets.pascal_voc
     imdb = datasets.pascal_voc('test', '2007')

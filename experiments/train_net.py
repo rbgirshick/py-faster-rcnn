@@ -47,7 +47,6 @@ if __name__ == '__main__':
     np.random.seed(conf.RNG_SEED)
 
     # set up caffe
-    caffe.set_phase_train()
     caffe.set_mode_gpu()
     if args.gpu_id is not None:
         caffe.set_device(args.gpu_id)

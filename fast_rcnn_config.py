@@ -1,7 +1,7 @@
 import os
 import sys
 import numpy as np
-caffe_path = os.path.abspath(os.path.join('..', 'caffe', 'python'))
+caffe_path = os.path.abspath(os.path.join('..', 'caffe-master', 'python'))
 sys.path.insert(0, caffe_path)
 
 # Scales used in the SPP-net paper
