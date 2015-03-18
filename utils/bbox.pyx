@@ -1,6 +1,6 @@
 """
 Fast code for dealing with image windows.
-Written by Sergey Karayev. See bbox.pyx.license.txt.
+Written by Sergey Karayev and used with permission.
 """
 cimport cython
 import numpy as np

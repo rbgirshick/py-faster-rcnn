@@ -8,10 +8,6 @@ ext_modules = [
     Extension(
         "utils.cython_bbox",
         ["utils/bbox.pyx"]
-    ),
-    Extension(
-        "utils.cython_nms",
-        ["utils/nms.pyx"]
     )
 ]
 cmdclass.update({'build_ext': build_ext})
