@@ -153,12 +153,12 @@ def im_detect(net, im, boxes):
 
     return scores, pred_boxes
 
-def _vis_detections(im, class_name, dets):
+def _vis_detections(im, class_name, dets, thresh=0.3):
     im = im[:, :, (2, 1, 0)]
     for i in xrange(np.minimum(10, dets.shape[0])):
         bbox = dets[i, :4]
         score = dets[i, -1]
-        if score > 0:
+        if score > thresh:
             plt.cla()
             plt.imshow(im)
             plt.gca().add_patch(
@@ -168,7 +168,7 @@ def _vis_detections(im, class_name, dets):
                               edgecolor='g', linewidth=3)
                 )
             plt.title('{}  {:.3f}'.format(class_name, score))
-            plt.pause(0.5)
+            plt.pause(1)
 
 def _apply_nms(all_boxes, thresh):
     num_classes = len(all_boxes)
@@ -247,7 +247,7 @@ def test_net(net, imdb):
                     .astype(np.float32, copy=False)
 
             if 0:
-                keep = utils.cython_nms.nms(all_boxes[j][i], 0.3)
+                keep = utils.nms.nms(all_boxes[j][i], 0.3)
                 _vis_detections(im, imdb.classes[j], all_boxes[j][i][keep, :])
         _t['misc'].toc()
 
