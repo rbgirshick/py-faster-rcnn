@@ -96,7 +96,7 @@ class imdb(object):
             self.roidb.append(entry)
         self._image_index = self._image_index * 2
 
-    def eval_recall(self, candidate_boxes, ar_thresh=0.5):
+    def evaluate_recall(self, candidate_boxes, ar_thresh=0.5):
         # Record max overlap value for each gt box
         # Return vector of overlap values
         gt_overlaps = np.zeros(0)
@@ -110,7 +110,22 @@ class imdb(object):
             overlaps = \
                     utils.cython_bbox.bbox_overlaps(boxes.astype(np.float),
                                                     gt_boxes.astype(np.float))
-            gt_overlaps = np.hstack((gt_overlaps, overlaps.max(axis=0)))
+
+            # gt_overlaps = np.hstack((gt_overlaps, overlaps.max(axis=0)))
+            _gt_overlaps = np.zeros((gt_boxes.shape[0]))
+            for j in xrange(gt_boxes.shape[0]):
+                argmax_overlaps = overlaps.argmax(axis=0)
+                max_overlaps = overlaps.max(axis=0)
+                gt_ind = max_overlaps.argmax()
+                gt_ovr = max_overlaps.max()
+                assert(gt_ovr >= 0)
+                box_ind = argmax_overlaps[gt_ind]
+                _gt_overlaps[j] = overlaps[box_ind, gt_ind]
+                assert(_gt_overlaps[j] == gt_ovr)
+                overlaps[box_ind, :] = -1
+                overlaps[:, gt_ind] = -1
+
+            gt_overlaps = np.hstack((gt_overlaps, _gt_overlaps))
 
         num_pos = gt_overlaps.size
         gt_overlaps = np.sort(gt_overlaps)
@@ -121,4 +136,4 @@ class imdb(object):
             recalls[i] = (gt_overlaps >= t).sum() / float(num_pos)
         ar = 2 * np.trapz(recalls, thresholds)
 
-        return ar, gt_overlaps
+        return ar, gt_overlaps, recalls, thresholds
