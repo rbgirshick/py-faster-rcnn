@@ -1,0 +1,4 @@
+- Port fine-tuning code to a proper Caffe Python layer
+- ImageNet ILSVRC detection dataset
+- COCO bounding-box detection
+- Port PASCAL evaluation code from Matlab to Python
