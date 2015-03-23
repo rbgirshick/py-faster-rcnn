@@ -1,8 +1,13 @@
+# ---------------------------------------------------------------
+# Fast R-CNN    version 1.0
+# Written by Ross Girshick, 2015
+# Licensed under the MSR-LA Full Rights License [see license.txt]
+# ---------------------------------------------------------------
+
+import datasets.pascal_voc
 import os
 import datasets.imdb
-import glob
 import xml.dom.minidom as minidom
-import time
 import numpy as np
 import scipy.sparse
 import scipy.io as sio

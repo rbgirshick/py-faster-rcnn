@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+
+# ---------------------------------------------------------------
+# Fast R-CNN    version 1.0
+# Written by Ross Girshick, 2015
+# Licensed under the MSR-LA Full Rights License [see license.txt]
+# ---------------------------------------------------------------
+
 import fast_rcnn_config as conf
 import fast_rcnn_test
 import caffe

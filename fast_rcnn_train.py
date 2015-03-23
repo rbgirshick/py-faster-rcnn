@@ -1,11 +1,14 @@
+# ---------------------------------------------------------------
+# Fast R-CNN    version 1.0
+# Written by Ross Girshick, 2015
+# Licensed under the MSR-LA Full Rights License [see license.txt]
+# ---------------------------------------------------------------
+
 import fast_rcnn_config as conf
-import time
 import numpy as np
-import matplotlib.pyplot as plt
 import cv2
 import caffe
 import finetuning
-import datasets.pascal_voc
 import bbox_regression_targets
 
 from caffe.proto import caffe_pb2

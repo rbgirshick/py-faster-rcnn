@@ -1,7 +1,9 @@
-"""
-Fast code for dealing with image windows.
-Written by Sergey Karayev and used with permission.
-"""
+# ---------------------------------------------------------------
+# Fast R-CNN    version 1.0
+# Written by Sergey Karayev and used with permission
+# Licensed under the MSR-LA Full Rights License [see license.txt]
+# ---------------------------------------------------------------
+
 cimport cython
 import numpy as np
 cimport numpy as np

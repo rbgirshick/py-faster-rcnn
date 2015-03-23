@@ -1,9 +1,13 @@
-import fast_rcnn_config as conf
+# ---------------------------------------------------------------
+# Fast R-CNN    version 1.0
+# Written by Ross Girshick, 2015
+# Licensed under the MSR-LA Full Rights License [see license.txt]
+# ---------------------------------------------------------------
 
+import fast_rcnn_config as conf
 import argparse
 from utils.timer import Timer
 import numpy as np
-import matplotlib.pyplot as plt
 import cv2
 import caffe
 import utils.nms
@@ -154,6 +158,7 @@ def im_detect(net, im, boxes):
     return scores, pred_boxes
 
 def _vis_detections(im, class_name, dets, thresh=0.3):
+    import matplotlib.pyplot as plt
     im = im[:, :, (2, 1, 0)]
     for i in xrange(np.minimum(10, dets.shape[0])):
         bbox = dets[i, :4]
