@@ -10,7 +10,7 @@ from utils.timer import Timer
 import numpy as np
 import cv2
 import caffe
-import utils.nms
+import utils.cython_nms
 import cPickle
 import heapq
 import utils.blob
@@ -185,12 +185,11 @@ def _apply_nms(all_boxes, thresh):
             dets = all_boxes[cls_ind][im_ind]
             if dets == []:
                 continue
-            keep = utils.nms.nms(dets, thresh)
+            keep = utils.cython_nms.nms(dets, thresh)
             if len(keep) == 0:
                 continue
             nms_boxes[cls_ind][im_ind] = dets[keep, :].copy()
     return nms_boxes
-
 
 def test_net(net, imdb):
     num_images = len(imdb.image_index)

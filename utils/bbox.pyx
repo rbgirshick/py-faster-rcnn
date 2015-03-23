@@ -11,8 +11,6 @@ cimport numpy as np
 DTYPE = np.float
 ctypedef np.float_t DTYPE_t
 
-#@cython.boundscheck(False)
-#@cython.wraparound(False)
 def bbox_overlaps(
         np.ndarray[DTYPE_t, ndim=2] boxes,
         np.ndarray[DTYPE_t, ndim=2] query_boxes):
