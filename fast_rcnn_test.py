@@ -251,7 +251,7 @@ def test_net(net, imdb):
                     .astype(np.float32, copy=False)
 
             if 0:
-                keep = utils.nms.nms(all_boxes[j][i], 0.3)
+                keep = utils.cython_nms.nms(all_boxes[j][i], 0.3)
                 _vis_detections(im, imdb.classes[j], all_boxes[j][i][keep, :])
         _t['misc'].toc()
 
