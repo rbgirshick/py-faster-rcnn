@@ -1,5 +1,11 @@
 # Fast R-CNN
 
+### Requirements
+
+0. Requirements for Caffe and pycaffe
+0. cython and python-opencv (`sudo apt-get install cython python-opencv` on Ubuntu)
+0. Matlab (required for PASCAL VOC evaluation only)
+
 ### Installation
 
 0. Extract the source code: `$ tar zxvf fast-rcnn.tgz`; call the source directory `$FRCNN`
