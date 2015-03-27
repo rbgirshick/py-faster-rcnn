@@ -12,7 +12,10 @@ import numpy as np
 caffe_path = os.path.abspath(os.path.join('..', 'caffe-master', 'python'))
 sys.path.insert(0, caffe_path)
 
-# Scales used in the SPP-net paper
+#
+# Training
+#
+
 # SCALES          = (480, 576, 688, 864, 1200)
 SCALES          = (600,)
 
@@ -43,15 +46,19 @@ PIXEL_MEANS     = np.array([[[102.9801, 115.9465, 122.7717]]])
 USE_FLIPPED     = True
 
 # Stride in input image pixels at ROI pooling level (network specific)
-# 16 is true for AlexNet and VGG-16
+# 16 is true for {Alex,Caffe}Net, VGG_CNN_M_1024, and VGG16
 FEAT_STRIDE     = 16
 BBOX_THRESH     = 0.5
-EPS             = 1e-14
 SNAPSHOT_ITERS  = 10000
+
+RNG_SEED        = 3
+EPS             = 1e-14
+
+#
+# Testing
+#
 
 TEST_SCALES     = (600,)
 TEST_MAX_SIZE   = 1000
 TEST_NMS        = 0.3
 TEST_BINARY     = False
-
-RNG_SEED        = 3
