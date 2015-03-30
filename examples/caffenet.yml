@@ -1,0 +1,7 @@
+TRAIN:
+  SCALES: !!python/tuple [480, 576, 688, 864, 1200]
+  MAX_SIZE: 2000
+  SNAPSHOT_INFIX: "multiscale"
+TEST:
+  SCALES: !!python/tuple [480, 576, 688, 864, 1200]
+  MAX_SIZE: 2000
