@@ -13,7 +13,7 @@
 # and use cfg_from_file(yaml_file) to load it and override the default options.
 #
 # - See tools/{train,test}_net.py for example code that uses cfg_from_file().
-# - See examples/caffenet.yml for an example YAML config override file.
+# - See examples/multiscale.yml for an example YAML config override file.
 #
 
 import os
@@ -23,7 +23,8 @@ import numpy as np
 from easydict import EasyDict as edict
 
 # Add caffe to PYTHONPATH
-caffe_path = os.path.abspath(os.path.join('..', 'caffe-master', 'python'))
+caffe_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                          '..', 'caffe-master', 'python'))
 sys.path.insert(0, caffe_path)
 
 __C = edict()

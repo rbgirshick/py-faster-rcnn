@@ -140,7 +140,7 @@ def im_detect(net, im, boxes):
                             rois=blobs['rois'].astype(np.float32, copy=False))
     if cfg.TEST.BINARY:
         # simulate binary logistic regression
-        scores = blobs_out['cls_score']
+        scores = net.blobs['cls_score'].data
         # Return scores as fg - bg
         scores = scores - scores[:, 0][:, np.newaxis]
     else:
