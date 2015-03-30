@@ -62,7 +62,7 @@ class imdb(object):
     def cache_path(self):
         return os.path.abspath(os.path.join(
             os.path.dirname(__file__),
-            'cache'))
+            '..', 'data', 'cache'))
 
     @property
     def num_images(self):

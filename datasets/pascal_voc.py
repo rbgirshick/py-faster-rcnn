@@ -81,7 +81,7 @@ class pascal_voc(datasets.imdb):
         """
         path = os.path.abspath(os.path.join(
                     os.path.dirname(__file__),
-                    '..', 'datasets', 'VOCdevkit' + self._year))
+                    '..', 'data', 'VOCdevkit' + self._year))
         return path
 
     def gt_roidb(self):
@@ -142,10 +142,11 @@ class pascal_voc(datasets.imdb):
         return a
 
     def _load_selective_search_roidb(self, gt_roidb):
-        filename = os.path.join(self.cache_path, 'selective_search_data',
-                                self.name + '.mat')
+        filename = os.path.abspath(os.path.join(self.cache_path, '..',
+                                                'selective_search_data',
+                                                self.name + '.mat'))
         assert os.path.exists(filename), \
-                'Selective search data not found at: {}'.format(filename)
+               'Selective search data not found at: {}'.format(filename)
         raw_data = sio.loadmat(filename)
 
         num_images = raw_data['boxes'].ravel().shape[0]

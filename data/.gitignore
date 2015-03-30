@@ -1,0 +1,5 @@
+selective_search_data*
+imagenet_models*
+fast_rcnn_models*
+VOCdevkit*
+cache
