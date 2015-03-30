@@ -7,14 +7,17 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                                '..', 'src')))
+
 from fast_rcnn_config import cfg, cfg_from_file
 import fast_rcnn_test
 from datasets.factory import get_imdb
 import caffe
 import argparse
 import pprint
-import sys
-import os
 import time
 
 def parse_args():

@@ -24,7 +24,7 @@ from easydict import EasyDict as edict
 
 # Add caffe to PYTHONPATH
 caffe_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                          '..', 'caffe-master', 'python'))
+                                          '..', 'caffe-fast-rcnn', 'python'))
 sys.path.insert(0, caffe_path)
 
 __C = edict()

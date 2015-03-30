@@ -7,11 +7,14 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                                '..', 'src')))
+
 import fast_rcnn_config
 import caffe
 import argparse
-import sys
-import os
 import numpy as np
 
 def parse_args():

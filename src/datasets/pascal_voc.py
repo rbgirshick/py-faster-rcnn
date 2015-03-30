@@ -81,7 +81,7 @@ class pascal_voc(datasets.imdb):
         """
         path = os.path.abspath(os.path.join(
                     os.path.dirname(__file__),
-                    '..', 'data', 'VOCdevkit' + self._year))
+                    '..', '..', 'data', 'VOCdevkit' + self._year))
         return path
 
     def gt_roidb(self):
