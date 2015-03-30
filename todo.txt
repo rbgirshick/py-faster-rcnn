@@ -2,6 +2,3 @@
 - ImageNet ILSVRC detection dataset
 - COCO bounding-box detection
 - Port PASCAL evaluation code from Matlab to Python
-
-- Dataset factory / args for train/test scripts
-- Stop at the correct time (40k iterations)

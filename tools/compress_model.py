@@ -7,7 +7,7 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-import fast_rcnn_config as conf
+import fast_rcnn_config
 import caffe
 import argparse
 import sys
@@ -36,8 +36,6 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-
-
 def compress_weights(W, l):
     """
     Compress the weight matrix W of an inner product (fully connected) layer
@@ -61,7 +59,6 @@ def compress_weights(W, l):
 
     L = np.dot(np.diag(sl), Vl)
     return Ul, L
-
 
 def main():
     args = parse_args()
@@ -124,7 +121,6 @@ def main():
     filename = 'snapshots/{}.caffemodel'.format(out)
     net_svd.save(filename)
     print 'Wrote svd model to: {:s}'.format(filename)
-
 
 if __name__ == '__main__':
     main()

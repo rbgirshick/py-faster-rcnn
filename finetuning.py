@@ -8,7 +8,7 @@
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-import fast_rcnn_config as conf
+from fast_rcnn_config import cfg
 import utils.blob
 
 def get_minibatch(roidb):
@@ -20,12 +20,12 @@ def get_minibatch(roidb):
     num_classes = roidb[0]['gt_overlaps'].shape[1]
     # Sample random scales to use for each image in this batch
     random_scale_inds = \
-        np.random.randint(0, high=len(conf.SCALES), size=num_images)
-    assert(conf.BATCH_SIZE % num_images == 0), \
-        'num_images ({}) must divide BATCH_SIZE ({})'.format(num_images,
-                                                             conf.BATCH_SIZE)
-    rois_per_image = conf.BATCH_SIZE / num_images
-    fg_rois_per_image = np.round(conf.FG_FRACTION * rois_per_image)
+        np.random.randint(0, high=len(cfg.TRAIN.SCALES), size=num_images)
+    assert(cfg.TRAIN.BATCH_SIZE % num_images == 0), \
+        'num_images ({}) must divide BATCH_SIZE ({})'. \
+        format(num_images, cfg.TRAIN.BATCH_SIZE)
+    rois_per_image = cfg.TRAIN.BATCH_SIZE / num_images
+    fg_rois_per_image = np.round(cfg.TRAIN.FG_FRACTION * rois_per_image)
 
     # Get the input image blob, formatted for caffe
     im_blob, im_scales = _get_image_blob(roidb, random_scale_inds)
@@ -68,7 +68,7 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image):
     rois = roidb['boxes']
 
     # Select foreground ROIs as those with >= FG_THRESH overlap
-    fg_inds = np.where(overlaps >= conf.FG_THRESH)[0]
+    fg_inds = np.where(overlaps >= cfg.TRAIN.FG_THRESH)[0]
     # Guard against the case when an image has fewer than fg_rois_per_image
     # foreground ROIs
     fg_rois_per_this_image = np.minimum(fg_rois_per_image, fg_inds.size)
@@ -78,8 +78,8 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image):
                                    replace=False)
 
     # Select background ROIs as those within [BG_THRESH_LO, BG_THRESH_HI)
-    bg_inds = np.where((overlaps < conf.BG_THRESH_HI) &
-                       (overlaps >= conf.BG_THRESH_LO))[0]
+    bg_inds = np.where((overlaps < cfg.TRAIN.BG_THRESH_HI) &
+                       (overlaps >= cfg.TRAIN.BG_THRESH_LO))[0]
     # Compute number of background ROIs to take from this image (guarding
     # against there being fewer than desired)
     bg_rois_per_this_image = rois_per_image - fg_rois_per_this_image
@@ -119,9 +119,10 @@ def _get_image_blob(roidb, scale_inds):
         im = cv2.imread(roidb[i]['image'])
         if roidb[i]['flipped']:
             im = im[:, ::-1, :]
-        target_size = conf.SCALES[scale_inds[i]]
-        im, im_scale = utils.blob.prep_im_for_blob(im, conf.PIXEL_MEANS,
-                                                   target_size, conf.MAX_SIZE)
+        target_size = cfg.TRAIN.SCALES[scale_inds[i]]
+        im, im_scale = \
+                utils.blob.prep_im_for_blob(im, cfg.PIXEL_MEANS,
+                                            target_size, cfg.TRAIN.MAX_SIZE)
         im_scales.append(im_scale)
         processed_ims.append(im)
 
@@ -134,7 +135,7 @@ def _map_im_rois_to_feat_rois(im_rois, im_scale_factor):
     """
     Map a ROI in image-pixel coordinates to a ROI in feature coordinates.
     """
-    feat_rois = np.round(im_rois * im_scale_factor / float(conf.FEAT_STRIDE))
+    feat_rois = np.round(im_rois * im_scale_factor / float(cfg.FEAT_STRIDE))
     return feat_rois
 
 def _get_bbox_regression_labels(bbox_target_data, num_classes):
@@ -163,9 +164,9 @@ def _vis_minibatch(im_blob, rois_blob, labels_blob, overlaps):
     for i in xrange(rois_blob.shape[0]):
       rois = rois_blob[i, :]
       im_ind = rois[0]
-      roi = rois[1:] * conf.FEAT_STRIDE
+      roi = rois[1:] * cfg.FEAT_STRIDE
       im = im_blob[im_ind, :, :, :].transpose((1, 2, 0)).copy()
-      im += conf.PIXEL_MEANS
+      im += cfg.PIXEL_MEANS
       im = im[:, :, (2, 1, 0)]
       im = im.astype(np.uint8)
       cls = labels_blob[i]

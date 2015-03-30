@@ -5,7 +5,7 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-import fast_rcnn_config as conf
+from fast_rcnn_config import cfg
 import numpy as np
 import cv2
 import caffe
@@ -47,7 +47,9 @@ class SolverWrapper(object):
         self.solver.net.params['bbox_pred'][1].data[...] = \
                 self.solver.net.params['bbox_pred'][1].data + means
 
-        filename = self.solver_param.snapshot_prefix + \
+        infix = ('_' + cfg.TRAIN.SNAPSHOT_INFIX
+                 if cfg.TRAIN.SNAPSHOT_INFIX != '' else '')
+        filename = self.solver_param.snapshot_prefix + infix + \
               '_iter_{:d}'.format(self.solver.iter) + '.caffemodel'
         self.solver.net.save(str(filename))
         print 'Wrote snapshot to: {:s}'.format(filename)
@@ -56,13 +58,17 @@ class SolverWrapper(object):
         self.solver.net.params['bbox_pred'][0].data[...] = orig_0
         self.solver.net.params['bbox_pred'][1].data[...] = orig_1
 
-    def train_model(self, roidb, max_epochs=100):
-        for epoch in xrange(max_epochs):
+    def train_model(self, roidb, max_iters):
+        last_snapshot_iter = -1
+        while self.solver.iter < max_iters:
             shuffled_inds = np.random.permutation(np.arange(len(roidb)))
-            lim = (len(shuffled_inds) / conf.IMS_PER_BATCH) * conf.IMS_PER_BATCH
+            lim = (len(shuffled_inds) / cfg.TRAIN.IMS_PER_BATCH) * \
+                    cfg.TRAIN.IMS_PER_BATCH
             shuffled_inds = shuffled_inds[0:lim]
-            for shuffled_i in xrange(0, len(shuffled_inds), conf.IMS_PER_BATCH):
-                db_inds = shuffled_inds[shuffled_i:shuffled_i + conf.IMS_PER_BATCH]
+            for shuffled_i in xrange(0, len(shuffled_inds),
+                                     cfg.TRAIN.IMS_PER_BATCH):
+                db_inds = shuffled_inds[shuffled_i:shuffled_i +
+                            cfg.TRAIN.IMS_PER_BATCH]
                 minibatch_db = [roidb[i] for i in db_inds]
                 im_blob, rois_blob, labels_blob, \
                     bbox_targets_blob, bbox_loss_weights_blob = \
@@ -106,8 +112,15 @@ class SolverWrapper(object):
                 # Make one SGD update
                 self.solver.step(1)
 
-                if self.solver.iter % conf.SNAPSHOT_ITERS == 0:
+                if self.solver.iter % cfg.TRAIN.SNAPSHOT_ITERS == 0:
+                    last_snapshot_iter = self.solver.iter
                     self.snapshot()
+
+                if self.solver.iter >= max_iters:
+                    break
+
+        if last_snapshot_iter != self.solver.iter:
+            self.snapshot()
 
 def prepare_training_roidb(imdb):
     """
@@ -138,9 +151,9 @@ def prepare_training_roidb(imdb):
 
     return roidb
 
-def train_net(solver_prototxt, imdb, pretrained_model=None, epochs=16):
+def train_net(solver_prototxt, imdb, pretrained_model=None, max_iters=40000):
     # enhance roidb to contain flipped examples
-    if conf.USE_FLIPPED:
+    if cfg.TRAIN.USE_FLIPPED:
         print 'Appending horizontally-flipped training examples...'
         imdb.append_flipped_roidb()
         print 'done'
@@ -161,6 +174,5 @@ def train_net(solver_prototxt, imdb, pretrained_model=None, epochs=16):
     sw.bbox_stds = stds
 
     print 'Solving...'
-    sw.train_model(roidb, max_epochs=epochs)
-    sw.snapshot()
+    sw.train_model(roidb, max_iters=max_iters)
     print 'done solving'

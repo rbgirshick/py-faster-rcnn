@@ -5,7 +5,7 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-import fast_rcnn_config as conf
+from fast_rcnn_config import cfg
 import argparse
 from utils.timer import Timer
 import numpy as np
@@ -20,7 +20,7 @@ import os
 def _get_image_blob(im):
     im_pyra = []
     im_orig = im.astype(np.float32, copy=True)
-    im_orig -= conf.PIXEL_MEANS
+    im_orig -= cfg.PIXEL_MEANS
 
     im_shape = im_orig.shape
     im_size_min = np.min(im_shape[0:2])
@@ -29,11 +29,11 @@ def _get_image_blob(im):
     processed_ims = []
     im_scale_factors = []
 
-    for target_size in conf.TEST_SCALES:
+    for target_size in cfg.TEST.SCALES:
         im_scale = float(target_size) / float(im_size_min)
         # Prevent the biggest axis from being more than MAX_SIZE
-        if np.round(im_scale * im_size_max) > conf.TEST_MAX_SIZE:
-            im_scale = float(conf.TEST_MAX_SIZE) / float(im_size_max)
+        if np.round(im_scale * im_size_max) > cfg.TEST.MAX_SIZE:
+            im_scale = float(cfg.TEST.MAX_SIZE) / float(im_size_max)
         im = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale,
                         interpolation=cv2.INTER_LINEAR)
         im_scale_factors.append(im_scale)
@@ -63,7 +63,7 @@ def _map_im_rois_to_feat_rois(im_rois, scales):
     else:
         levels = np.zeros((im_rois.shape[0], 1), dtype=np.int)
 
-    feat_rois = np.round(im_rois * scales[levels] / conf.FEAT_STRIDE)
+    feat_rois = np.round(im_rois * scales[levels] / cfg.FEAT_STRIDE)
 
     return feat_rois, levels
 
@@ -78,8 +78,8 @@ def _bbox_pred(boxes, box_deltas):
         return np.zeros((0, box_deltas.shape[1]))
 
     boxes = boxes.astype(np.float, copy=False)
-    widths = boxes[:, 2] - boxes[:, 0] + conf.EPS
-    heights = boxes[:, 3] - boxes[:, 1] + conf.EPS
+    widths = boxes[:, 2] - boxes[:, 0] + cfg.EPS
+    heights = boxes[:, 3] - boxes[:, 1] + cfg.EPS
     ctr_x = boxes[:, 0] + 0.5 * widths
     ctr_y = boxes[:, 1] + 0.5 * heights
 
@@ -138,7 +138,7 @@ def im_detect(net, im, boxes):
     net.blobs['rois'].reshape(num_rois, 5, 1, 1)
     blobs_out = net.forward(data=blobs['data'].astype(np.float32, copy=False),
                             rois=blobs['rois'].astype(np.float32, copy=False))
-    if conf.TEST_BINARY:
+    if cfg.TEST.BINARY:
         # simulate binary logistic regression
         scores = blobs_out['cls_score']
         # Return scores as fg - bg
@@ -270,7 +270,7 @@ def test_net(net, imdb):
         cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL)
 
     print 'Applying NMS to all detections'
-    nms_dets = _apply_nms(all_boxes, conf.TEST_NMS)
+    nms_dets = _apply_nms(all_boxes, cfg.TEST.NMS)
 
     print 'Evaluating detections'
     imdb.evaluate_detections(nms_dets, output_dir)

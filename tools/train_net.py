@@ -7,13 +7,13 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-import fast_rcnn_config as conf
+from fast_rcnn_config import cfg, cfg_from_file
 import fast_rcnn_train
+from datasets.factory import get_imdb
 import caffe
 import argparse
+import pprint
 import numpy as np
-import datasets.pascal_voc
-import time
 import sys
 
 def parse_args():
@@ -21,16 +21,21 @@ def parse_args():
     Parse input arguments
     """
     parser = argparse.ArgumentParser(description='Train a fast R-CNN')
-    parser.add_argument('--gpu', dest='gpu_id', help='GPU id to use',
+    parser.add_argument('--gpu', dest='gpu_id', help='GPU device id to use [0]',
                         default=0, type=int)
     parser.add_argument('--solver', dest='solver', help='solver prototxt',
                         default=None, type=str)
-    parser.add_argument('--epochs', dest='epochs',
-                        help='number of epoch to train',
-                        default=16, type=int)
+    parser.add_argument('--iters', dest='max_iters',
+                        help='number of iterations to train',
+                        default=40000, type=int)
     parser.add_argument('--weights', dest='pretrained_model',
                         help='initialize with pretrained model weights',
                         default=None, type=str)
+    parser.add_argument('--cfg', dest='cfg_file',
+                        help='optional config file', default=None, type=str)
+    parser.add_argument('--imdb', dest='imdb_name',
+                        help='dataset to train on',
+                        default='voc_2007_trainval', type=str)
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -42,26 +47,26 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    default_solver = './models/vgg16_solver.prototxt'
+    print('Called with args:')
+    print(args)
 
-    if args.solver is None:
-        args.solver = default_solver
+    if args.cfg_file is not None:
+        cfg_from_file(args.cfg_file)
 
-    if args.pretrained_model is None:
-        print('Warning: starting from random initialization')
-        time.sleep(2)
+    print('Using fast_rcnn_config:')
+    pprint.pprint(cfg)
 
     # fix the random seed for reproducibility
-    np.random.seed(conf.RNG_SEED)
+    np.random.seed(cfg.RNG_SEED)
 
     # set up caffe
     caffe.set_mode_gpu()
     if args.gpu_id is not None:
         caffe.set_device(args.gpu_id)
 
-    imdb_train = datasets.pascal_voc('trainval', '2007')
+    imdb_train = get_imdb(args.imdb_name)
     print 'Loaded dataset `{:s}` for training'.format(imdb_train.name)
 
     fast_rcnn_train.train_net(args.solver, imdb_train,
                               pretrained_model=args.pretrained_model,
-                              epochs=args.epochs)
+                              max_iters=args.max_iters)

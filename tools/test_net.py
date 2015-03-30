@@ -7,12 +7,15 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-import fast_rcnn_config as conf
+from fast_rcnn_config import cfg, cfg_from_file
 import fast_rcnn_test
+from datasets.factory import get_imdb
 import caffe
 import argparse
+import pprint
 import sys
 import os
+import time
 
 def parse_args():
     """
@@ -27,6 +30,14 @@ def parse_args():
     parser.add_argument('--net', dest='caffemodel',
                         help='model to test',
                         default=None, type=str)
+    parser.add_argument('--cfg', dest='cfg_file',
+                        help='optional config file', default=None, type=str)
+    parser.add_argument('--wait', dest='wait',
+                        help='wait until net file exists',
+                        default=True, type=bool)
+    parser.add_argument('--imdb', dest='imdb_name',
+                        help='dataset to test',
+                        default='voc_2007_test', type=str)
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -39,11 +50,23 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
+    print('Called with args:')
+    print(args)
+
+    if args.cfg_file is not None:
+        cfg_from_file(args.cfg_file)
+
+    print('Using fast_rcnn_config:')
+    pprint.pprint(cfg)
+
+    while not os.path.exists(args.caffemodel) and args.wait:
+        print('Waiting for {} to exist...'.format(args.caffemodel))
+        time.sleep(10)
+
     caffe.set_mode_gpu()
     caffe.set_device(args.gpu_id)
     net = caffe.Net(args.prototxt, args.caffemodel, caffe.TEST)
     net.name = os.path.splitext(os.path.basename(args.caffemodel))[0]
 
-    import datasets.pascal_voc
-    imdb = datasets.pascal_voc('test', '2007')
+    imdb = get_imdb(args.imdb_name)
     fast_rcnn_test.test_net(net, imdb)
