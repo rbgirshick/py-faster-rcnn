@@ -41,9 +41,9 @@ def get_minibatch(roidb):
             = _sample_rois(roidb[im_i], fg_rois_per_image, rois_per_image)
 
         # Add to ROIs blob
-        feat_rois = _map_im_rois_to_feat_rois(im_rois, im_scales[im_i])
-        batch_ind = im_i * np.ones((feat_rois.shape[0], 1))
-        rois_blob_this_image = np.hstack((batch_ind, feat_rois))
+        rois = _scale_im_rois(im_rois, im_scales[im_i])
+        batch_ind = im_i * np.ones((rois.shape[0], 1))
+        rois_blob_this_image = np.hstack((batch_ind, rois))
         rois_blob = np.vstack((rois_blob, rois_blob_this_image))
 
         # Add to labels, bbox targets, and bbox loss blobs
@@ -131,12 +131,9 @@ def _get_image_blob(roidb, scale_inds):
 
     return blob, im_scales
 
-def _map_im_rois_to_feat_rois(im_rois, im_scale_factor):
-    """
-    Map a ROI in image-pixel coordinates to a ROI in feature coordinates.
-    """
-    feat_rois = np.round(im_rois * im_scale_factor / float(cfg.FEAT_STRIDE))
-    return feat_rois
+def _scale_im_rois(im_rois, im_scale_factor):
+    rois = im_rois * im_scale_factor
+    return rois
 
 def _get_bbox_regression_labels(bbox_target_data, num_classes):
     """
@@ -164,7 +161,7 @@ def _vis_minibatch(im_blob, rois_blob, labels_blob, overlaps):
     for i in xrange(rois_blob.shape[0]):
       rois = rois_blob[i, :]
       im_ind = rois[0]
-      roi = rois[1:] * cfg.FEAT_STRIDE
+      roi = rois[1:]
       im = im_blob[im_ind, :, :, :].transpose((1, 2, 0)).copy()
       im += cfg.PIXEL_MEANS
       im = im[:, :, (2, 1, 0)]

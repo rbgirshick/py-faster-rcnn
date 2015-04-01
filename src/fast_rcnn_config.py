@@ -17,14 +17,15 @@
 #
 
 import os
+import os.path as osp
 import sys
 import numpy as np
 # `pip install easydict` if you don't have it
 from easydict import EasyDict as edict
 
 # Add caffe to PYTHONPATH
-caffe_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                          '..', 'caffe-fast-rcnn', 'python'))
+caffe_path = osp.abspath(osp.join(osp.dirname(__file__), '..',
+                                  'caffe-fast-rcnn', 'python'))
 sys.path.insert(0, caffe_path)
 
 __C = edict()
@@ -101,21 +102,25 @@ __C.TEST.BINARY     = False
 # MISC
 #
 
+# The mapping from image coordinates to feature map coordinates might cause
+# some boxes that are distinct in image space to become identical in feature
+# coordinates. If DEDUP_BOXES > 0, then DEDUP_BOXES is used as the scale factor
+# for identifying duplicate boxes.
+# 1/16 is correct for {Alex,Caffe}Net, VGG_CNN_M_1024, and VGG_16
+__C.DEDUP_BOXES     = 1./16.
+
 # Pixel mean values (BGR order) as a (1, 1, 3) array
 # These are the values originally used for training VGG_16
 __C.PIXEL_MEANS     = np.array([[[102.9801, 115.9465, 122.7717]]])
-
-# Stride in input image pixels at ROI pooling level (network specific)
-# 16 is true for {Alex,Caffe}Net, VGG_CNN_M_1024, and VGG16
-# If your network has a different stride (e.g., VGG_CNN_S has stride 12)
-# make sure to override this in a config file!)
-__C.FEAT_STRIDE     = 16
 
 # For reproducibility
 __C.RNG_SEED        = 3
 
 # A small number that's used many times
 __C.EPS             = 1e-14
+
+# Root directory of project
+__C.ROOT_DIR        = osp.abspath(osp.join(osp.dirname(__file__), '..'))
 
 def merge_a_into_b(a, b):
     """

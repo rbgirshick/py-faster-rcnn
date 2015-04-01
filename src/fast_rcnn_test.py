@@ -45,11 +45,11 @@ def _get_image_blob(im):
     return blob, np.array(im_scale_factors)
 
 def _get_rois_blob(im_rois, im_scale_factors):
-    feat_rois, levels = _map_im_rois_to_feat_rois(im_rois, im_scale_factors)
-    rois_blob = np.hstack((levels, feat_rois))[:, :, np.newaxis, np.newaxis]
+    rois, levels = _scale_im_rois(im_rois, im_scale_factors)
+    rois_blob = np.hstack((levels, rois))[:, :, np.newaxis, np.newaxis]
     return rois_blob.astype(np.float32, copy=False)
 
-def _map_im_rois_to_feat_rois(im_rois, scales):
+def _scale_im_rois(im_rois, scales):
     im_rois = im_rois.astype(np.float, copy=False)
 
     if len(scales) > 1:
@@ -63,9 +63,9 @@ def _map_im_rois_to_feat_rois(im_rois, scales):
     else:
         levels = np.zeros((im_rois.shape[0], 1), dtype=np.int)
 
-    feat_rois = np.round(im_rois * scales[levels] / cfg.FEAT_STRIDE)
+    rois = im_rois * scales[levels]
 
-    return feat_rois, levels
+    return rois, levels
 
 def _get_blobs(im, rois):
     blobs = {'data' : None, 'rois' : None}
@@ -123,12 +123,13 @@ def im_detect(net, im, boxes):
     # (some distinct image ROIs get mapped to the same feature ROI).
     # Here, we identify duplicate feature ROIs, so we only compute features
     # on the unique subset.
-    v = np.array([1, 1e3, 1e6, 1e9, 1e12])
-    hashes = blobs['rois'][:, :, 0, 0].dot(v.T)
-    _, index, inv_index = np.unique(hashes, return_index=True,
-                                    return_inverse=True)
-    blobs['rois'] = blobs['rois'][index, :, :, :]
-    boxes = boxes[index, :]
+    if cfg.DEDUP_BOXES > 0:
+        v = np.array([1, 1e3, 1e6, 1e9, 1e12])
+        hashes = np.round(blobs['rois'][:, :, 0, 0] * cfg.DEDUP_BOXES).dot(v)
+        _, index, inv_index = np.unique(hashes, return_index=True,
+                                        return_inverse=True)
+        blobs['rois'] = blobs['rois'][index, :, :, :]
+        boxes = boxes[index, :]
 
     # reshape network inputs
     base_shape = blobs['data'].shape
@@ -152,9 +153,10 @@ def im_detect(net, im, boxes):
     pred_boxes = _bbox_pred(boxes, box_deltas)
     pred_boxes = _clip_boxes(pred_boxes, im.shape)
 
-    # Map scores and predictions back to the original set of boxes
-    scores = scores[inv_index, :]
-    pred_boxes = pred_boxes[inv_index, :]
+    if cfg.DEDUP_BOXES > 0:
+        # Map scores and predictions back to the original set of boxes
+        scores = scores[inv_index, :]
+        pred_boxes = pred_boxes[inv_index, :]
 
     return scores, pred_boxes
 
@@ -213,8 +215,7 @@ def test_net(net, imdb):
 
     # Output directory will be something like:
     #   output/vgg16_fast_rcnn_iter_40000/voc_2007_test/
-    output_dir = os.path.join(os.path.dirname(__file__), 'output',
-                              net.name, imdb.name)
+    output_dir = os.path.join(cfg.ROOT_DIR, 'output', net.name, imdb.name)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
