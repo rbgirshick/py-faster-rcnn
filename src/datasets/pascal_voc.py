@@ -15,6 +15,7 @@ import scipy.io as sio
 import utils.cython_bbox
 import cPickle
 import subprocess
+from fast_rcnn_config import cfg
 
 class pascal_voc(datasets.imdb):
     def __init__(self, image_set, year, devkit_path=None):
@@ -23,7 +24,7 @@ class pascal_voc(datasets.imdb):
         self._image_set = image_set
         self._devkit_path = self._get_default_path() if devkit_path is None \
                             else devkit_path
-        self._base_path = os.path.join(self._devkit_path, 'VOC' + self._year)
+        self._data_path = os.path.join(self._devkit_path, 'VOC' + self._year)
         self._classes = ('__background__', # always index 0
                          'aeroplane', 'bicycle', 'bird', 'boat',
                          'bottle', 'bus', 'car', 'cat', 'chair',
@@ -42,8 +43,8 @@ class pascal_voc(datasets.imdb):
 
         assert os.path.exists(self._devkit_path), \
                 'VOCdevkit path does not exist: {}'.format(self._devkit_path)
-        assert os.path.exists(self._base_path), \
-                'Path does not exist: {}'.format(self._base_path)
+        assert os.path.exists(self._data_path), \
+                'Path does not exist: {}'.format(self._data_path)
 
     def image_path_at(self, i):
         """
@@ -55,7 +56,7 @@ class pascal_voc(datasets.imdb):
         """
         Construct an image path from the image's "index" identifier.
         """
-        image_path = os.path.join(self._base_path, 'JPEGImages',
+        image_path = os.path.join(self._data_path, 'JPEGImages',
                                   index + self._image_ext)
         assert os.path.exists(image_path), \
                 'Path does not exist: {}'.format(image_path)
@@ -67,7 +68,7 @@ class pascal_voc(datasets.imdb):
         """
         # Example path to image set file:
         # self._devkit_path + /VOCdevkit2007/VOC2007/ImageSets/Main/val.txt
-        image_set_file = os.path.join(self._base_path, 'ImageSets', 'Main',
+        image_set_file = os.path.join(self._data_path, 'ImageSets', 'Main',
                                       self._image_set + '.txt')
         assert os.path.exists(image_set_file), \
                 'Path does not exist: {}'.format(image_set_file)
@@ -79,10 +80,7 @@ class pascal_voc(datasets.imdb):
         """
         Return the default path where PASCAL VOC is expected to be installed.
         """
-        path = os.path.abspath(os.path.join(
-                    os.path.dirname(__file__),
-                    '..', '..', 'data', 'VOCdevkit' + self._year))
-        return path
+        return os.path.join(cfg.ROOT_DIR, 'data', 'VOCdevkit' + self._year)
 
     def gt_roidb(self):
         """
@@ -177,7 +175,7 @@ class pascal_voc(datasets.imdb):
         Load image and bounding boxes info from XML file in the PASCAL VOC
         format.
         """
-        filename = os.path.join(self._base_path, 'Annotations', index + '.xml')
+        filename = os.path.join(self._data_path, 'Annotations', index + '.xml')
         # print 'Loading: {}'.format(filename)
         def get_data_from_tag(node, tag):
             return node.getElementsByTagName(tag)[0].childNodes[0].data

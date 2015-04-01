@@ -9,6 +9,7 @@ import os
 import PIL
 import utils.cython_bbox
 import numpy as np
+from fast_rcnn_config import cfg
 
 class imdb(object):
     def __init__(self, name):
@@ -60,9 +61,7 @@ class imdb(object):
 
     @property
     def cache_path(self):
-        return os.path.abspath(os.path.join(
-            os.path.dirname(__file__),
-            '..', '..', 'data', 'cache'))
+        return os.path.join(cfg.ROOT_DIR, 'data', 'cache')
 
     @property
     def num_images(self):
