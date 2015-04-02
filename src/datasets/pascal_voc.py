@@ -39,7 +39,8 @@ class pascal_voc(datasets.imdb):
 
         # PASCAL specific config options
         self.config = {'cleanup'  : True,
-                       'use_salt' : True}
+                       'use_salt' : True,
+                       'top_k'    : 2000}
 
         assert os.path.exists(self._devkit_path), \
                 'VOCdevkit path does not exist: {}'.format(self._devkit_path)
@@ -95,7 +96,6 @@ class pascal_voc(datasets.imdb):
             print '{} gt roidb loaded from {}'.format(self.name, cache_file)
             return roidb
 
-        # Load all annotation file data (should take < 30 s).
         gt_roidb = [self._load_pascal_annotation(index)
                     for index in self.image_index]
         with open(cache_file, 'wb') as fid:
@@ -122,22 +122,12 @@ class pascal_voc(datasets.imdb):
 
         gt_roidb = self.gt_roidb()
         ss_roidb = self._load_selective_search_roidb(gt_roidb)
-        roidb = self._merge_roidbs(gt_roidb, ss_roidb)
+        roidb = datasets.imdb.merge_roidbs(gt_roidb, ss_roidb)
         with open(cache_file, 'wb') as fid:
             cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
         print 'wrote ss roidb to {}'.format(cache_file)
 
         return roidb
-
-    def _merge_roidbs(self, a, b):
-        assert len(a) == len(b)
-        for i in xrange(len(a)):
-            a[i]['boxes'] = np.vstack((a[i]['boxes'], b[i]['boxes']))
-            a[i]['gt_classes'] = np.hstack((a[i]['gt_classes'],
-                                            b[i]['gt_classes']))
-            a[i]['gt_overlaps'] = scipy.sparse.vstack([a[i]['gt_overlaps'],
-                                                       b[i]['gt_overlaps']])
-        return a
 
     def _load_selective_search_roidb(self, gt_roidb):
         filename = os.path.abspath(os.path.join(self.cache_path, '..',
@@ -145,30 +135,55 @@ class pascal_voc(datasets.imdb):
                                                 self.name + '.mat'))
         assert os.path.exists(filename), \
                'Selective search data not found at: {}'.format(filename)
-        raw_data = sio.loadmat(filename)
+        raw_data = sio.loadmat(filename)['boxes'].ravel()
 
-        num_images = raw_data['boxes'].ravel().shape[0]
-        ss_roidb = []
-        for i in xrange(num_images):
-            boxes = raw_data['boxes'].ravel()[i][:, (1, 0, 3, 2)] - 1
-            num_boxes = boxes.shape[0]
-            gt_boxes = gt_roidb[i]['boxes']
-            gt_classes = gt_roidb[i]['gt_classes']
-            gt_overlaps = \
-                    utils.cython_bbox.bbox_overlaps(boxes.astype(np.float),
-                                                    gt_boxes.astype(np.float))
-            argmaxes = gt_overlaps.argmax(axis=1)
-            maxes = gt_overlaps.max(axis=1)
-            I = np.where(maxes > 0)[0]
-            overlaps = np.zeros((num_boxes, self.num_classes), dtype=np.float32)
-            overlaps[I, gt_classes[argmaxes[I]]] = maxes[I]
-            overlaps = scipy.sparse.csr_matrix(overlaps)
-            ss_roidb.append({'boxes' : boxes,
-                             'gt_classes' : np.zeros((num_boxes,),
-                                                      dtype=np.int32),
-                             'gt_overlaps' : overlaps,
-                             'flipped' : False})
-        return ss_roidb
+        box_list = []
+        for i in xrange(raw_data.shape[0]):
+            box_list.append(raw_data[i][:, (1, 0, 3, 2)] - 1)
+
+        return self.create_roidb_from_box_list(box_list, gt_roidb)
+
+    def selective_search_IJCV_roidb(self):
+        """
+        Return the database of selective search regions of interest.
+        Ground-truth ROIs are also included.
+
+        This function loads/saves from/to a cache file to speed up future calls.
+        """
+        cache_file = os.path.join(self.cache_path,
+                '{:s}_selective_search_IJCV_top_{:d}_roidb.pkl'.
+                format(self.name, self.config['top_k']))
+
+        if os.path.exists(cache_file):
+            with open(cache_file, 'rb') as fid:
+                roidb = cPickle.load(fid)
+            print '{} ss roidb loaded from {}'.format(self.name, cache_file)
+            return roidb
+
+        gt_roidb = self.gt_roidb()
+        ss_roidb = self._load_selective_search_IJCV_roidb(gt_roidb)
+        roidb = datasets.imdb.merge_roidbs(gt_roidb, ss_roidb)
+        with open(cache_file, 'wb') as fid:
+            cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
+        print 'wrote ss roidb to {}'.format(cache_file)
+
+        return roidb
+
+    def _load_selective_search_IJCV_roidb(self, gt_roidb):
+        IJCV_path = os.path.abspath(os.path.join(self.cache_path, '..',
+                                                 'selective_search_IJCV_data',
+                                                 'voc_' + self._year))
+        assert os.path.exists(IJCV_path), \
+               'Selective search IJCV data not found at: {}'.format(IJCV_path)
+
+        top_k = self.config['top_k']
+        box_list = []
+        for i in xrange(self.num_images):
+            filename = os.path.join(IJCV_path, self.image_index[i] + '.mat')
+            raw_data = sio.loadmat(filename)
+            box_list.append((raw_data['boxes'][:top_k, :]-1).astype(np.uint16))
+
+        return self.create_roidb_from_box_list(box_list, gt_roidb)
 
     def _load_pascal_annotation(self, index):
         """
