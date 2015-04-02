@@ -125,6 +125,10 @@ __C.ROOT_DIR        = osp.abspath(osp.join(osp.dirname(__file__), '..'))
 # Place outputs under an experiments directory
 __C.EXP_DIR         = 'default'
 
+# The shell command to start matlab
+# If `matlab` is in your path, then this default should work
+__C.MATLAB          = 'matlab'
+
 def get_output_path(imdb, net):
     path = os.path.join(__C.ROOT_DIR, 'output', __C.EXP_DIR, imdb.name)
     if net is None:

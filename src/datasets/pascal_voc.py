@@ -258,7 +258,7 @@ class pascal_voc(datasets.imdb):
         path = os.path.join(os.path.dirname(__file__),
                             'VOCdevkit-matlab-wrapper')
         cmd = 'cd {} && '.format(path)
-        cmd += 'matlab -nodisplay -nodesktop '
+        cmd += '{:s} -nodisplay -nodesktop '.format(cfg.MATLAB)
         cmd += '-r "dbstop if error; '
         cmd += 'voc_eval(\'{:s}\',\'{:s}\',\'{:s}\',\'{:s}\',{:d}); quit;"' \
                .format(self._devkit_path, comp_id,
