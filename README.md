@@ -9,12 +9,12 @@
 ### Installation
 
 1. Extract the source code: `$ tar zxvf fast-rcnn.tgz`; call the source directory $FRCNN
-2. Build Cython modules: `$ cd $FRCNN && make` (there will probably be some benign warnings that you can ignore)
-3. Build Caffe: `$ cd $FRCNN/caffe-master` and follow the Caffe installation instructions
+2. Build Cython modules: `$ cd $FRCNN/src && make` (there will probably be some benign warnings that you can ignore)
+3. Build Caffe and pycaffe: `$ cd $FRCNN/caffe-fast-rcnn` and follow the Caffe installation instructions
 4. Establish symlinks for VOCdevkits
-  1. Symlink `$FRCNN/datasets/VOCdevkit2007` to where you have the PASCAL VOC 2007 devkit and data installed
+  1. Symlink `$FRCNN/data/VOCdevkit2007` to where you have the PASCAL VOC 2007 devkit and data installed
   2. And similiarly for other PASCAL VOC 20XY datasets
-  3. Symlink `$FRCNN/datasets/cache` to somewhere that will store cached dataset files
+  3. Symlink `$FRCNN/data/cache` to somewhere that will store cached dataset files
 
 ### Usage
 
