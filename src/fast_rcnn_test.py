@@ -5,7 +5,7 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-from fast_rcnn_config import cfg
+from fast_rcnn_config import cfg, get_output_path
 import argparse
 from utils.timer import Timer
 import numpy as np
@@ -213,9 +213,7 @@ def test_net(net, imdb):
     all_boxes = [[[] for _ in xrange(num_images)]
                  for _ in xrange(imdb.num_classes)]
 
-    # Output directory will be something like:
-    #   output/vgg16_fast_rcnn_iter_40000/voc_2007_test/
-    output_dir = os.path.join(cfg.ROOT_DIR, 'output', net.name, imdb.name)
+    output_dir = get_output_path(imdb, net)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 

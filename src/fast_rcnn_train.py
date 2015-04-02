@@ -5,20 +5,22 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-from fast_rcnn_config import cfg
+from fast_rcnn_config import cfg, get_output_path
 import numpy as np
 import cv2
 import caffe
 import finetuning
 import bbox_regression_targets
+import os
 
 from caffe.proto import caffe_pb2
 import google.protobuf as pb2
 
 class SolverWrapper(object):
-    def __init__(self, solver_prototxt, pretrained_model=None):
+    def __init__(self, solver_prototxt, imdb, pretrained_model=None):
         self.bbox_means = None
         self.bbox_stds = None
+        self.imdb = imdb
 
         self.solver = caffe.SGDSolver(solver_prototxt)
         if pretrained_model is not None:
@@ -47,10 +49,16 @@ class SolverWrapper(object):
         self.solver.net.params['bbox_pred'][1].data[...] = \
                 self.solver.net.params['bbox_pred'][1].data + means
 
+        output_dir = get_output_path(self.imdb, None)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
         infix = ('_' + cfg.TRAIN.SNAPSHOT_INFIX
                  if cfg.TRAIN.SNAPSHOT_INFIX != '' else '')
         filename = self.solver_param.snapshot_prefix + infix + \
-              '_iter_{:d}'.format(self.solver.iter) + '.caffemodel'
+                   '_iter_{:d}'.format(self.solver.iter) + '.caffemodel'
+        filename = os.path.join(output_dir, filename)
+
         self.solver.net.save(str(filename))
         print 'Wrote snapshot to: {:s}'.format(filename)
 
@@ -169,7 +177,7 @@ def train_net(solver_prototxt, imdb, pretrained_model=None, max_iters=40000):
         bbox_regression_targets.append_bbox_regression_targets(roidb)
     print 'done'
 
-    sw = SolverWrapper(solver_prototxt, pretrained_model=pretrained_model)
+    sw = SolverWrapper(solver_prototxt, imdb, pretrained_model=pretrained_model)
     sw.bbox_means = means
     sw.bbox_stds = stds
 

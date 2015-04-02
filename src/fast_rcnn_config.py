@@ -122,7 +122,17 @@ __C.EPS             = 1e-14
 # Root directory of project
 __C.ROOT_DIR        = osp.abspath(osp.join(osp.dirname(__file__), '..'))
 
-def merge_a_into_b(a, b):
+# Place outputs under an experiments directory
+__C.EXP_DIR         = 'default'
+
+def get_output_path(imdb, net):
+    path = os.path.join(__C.ROOT_DIR, 'output', __C.EXP_DIR, imdb.name)
+    if net is None:
+        return path
+    else:
+        return os.path.join(path, net.name)
+
+def _merge_a_into_b(a, b):
     """
     Merge config dictionary a into config dictionary b, clobbering the options
     in b whenever they are also specified in a.
@@ -142,7 +152,7 @@ def merge_a_into_b(a, b):
         # recursively merge dicts
         if type(v) is edict:
             try:
-                merge_a_into_b(a[k], b[k])
+                _merge_a_into_b(a[k], b[k])
             except:
                 print('Error under config key: {}'.format(k))
                 raise
@@ -159,4 +169,4 @@ def cfg_from_file(filename):
     with open(filename, 'r') as f:
         yaml_cfg = edict(yaml.load(f))
 
-    merge_a_into_b(yaml_cfg, __C)
+    _merge_a_into_b(yaml_cfg, __C)
