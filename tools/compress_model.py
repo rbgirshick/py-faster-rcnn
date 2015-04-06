@@ -78,6 +78,7 @@ def main():
     print('Compressed network prototxt {}'.format(args.prototxt_svd))
 
     out = os.path.splitext(os.path.basename(args.caffemodel))[0] + '_svd'
+    out_dir = os.path.dirname(args.caffemodel)
 
     # Compress fc6
     if net_svd.params.has_key('fc6_L'):
@@ -121,7 +122,7 @@ def main():
 
         out += '_fc7_{}'.format(l_fc7)
 
-    filename = 'snapshots/{}.caffemodel'.format(out)
+    filename = '{}/{}.caffemodel'.format(out_dir, out)
     net_svd.save(filename)
     print 'Wrote svd model to: {:s}'.format(filename)
 
