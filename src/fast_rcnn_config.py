@@ -66,6 +66,9 @@ __C.TRAIN.BG_THRESH_LO    = 0.1
 # Use horizontally-flipped images during training?
 __C.TRAIN.USE_FLIPPED     = True
 
+# Train bounding-box regressors
+__C.TRAIN.BBOX_REG        = True
+
 # Overlap required between a ROI and ground-truth box in order for that ROI to
 # be used as a bounding-box regression training example
 __C.TRAIN.BBOX_THRESH     = 0.5
@@ -97,6 +100,9 @@ __C.TEST.NMS        = 0.3
 # Experimental: use binary logistic regression scores instead of K-way softmax
 # scores when testing
 __C.TEST.BINARY     = False
+
+# Test using bounding-box regressors
+__C.TEST.BBOX_REG        = True
 
 #
 # MISC

@@ -132,11 +132,8 @@ def im_detect(net, im, boxes):
         boxes = boxes[index, :]
 
     # reshape network inputs
-    base_shape = blobs['data'].shape
-    num_rois = blobs['rois'].shape[0]
-    net.blobs['data'].reshape(base_shape[0], base_shape[1],
-                              base_shape[2], base_shape[3])
-    net.blobs['rois'].reshape(num_rois, 5, 1, 1)
+    net.blobs['data'].reshape(*(blobs['data'].shape))
+    net.blobs['rois'].reshape(*(blobs['rois'].shape))
     blobs_out = net.forward(data=blobs['data'].astype(np.float32, copy=False),
                             rois=blobs['rois'].astype(np.float32, copy=False))
     if cfg.TEST.BINARY:
@@ -148,10 +145,14 @@ def im_detect(net, im, boxes):
         # use softmax estimated probabilities
         scores = blobs_out['cls_prob']
 
-    # Apply bounding-box regression deltas
-    box_deltas = blobs_out['bbox_pred']
-    pred_boxes = _bbox_pred(boxes, box_deltas)
-    pred_boxes = _clip_boxes(pred_boxes, im.shape)
+    if cfg.TEST.BBOX_REG:
+        # Apply bounding-box regression deltas
+        box_deltas = blobs_out['bbox_pred']
+        pred_boxes = _bbox_pred(boxes, box_deltas)
+        pred_boxes = _clip_boxes(pred_boxes, im.shape)
+    else:
+        # Simply repeat the boxes, once for each class
+        pred_boxes = np.tile(boxes, (1, scores.shape[1]))
 
     if cfg.DEDUP_BOXES > 0:
         # Map scores and predictions back to the original set of boxes

@@ -55,7 +55,15 @@ def get_minibatch(roidb):
     # For debug visualizations
     # _vis_minibatch(im_blob, rois_blob, labels_blob, all_overlaps)
 
-    return im_blob, rois_blob, labels_blob, bbox_targets_blob, bbox_loss_blob
+    blobs = {'data': im_blob,
+             'rois': rois_blob,
+             'labels': labels_blob}
+
+    if cfg.TRAIN.BBOX_REG:
+        blobs['bbox_targets'] = bbox_targets_blob
+        blobs['bbox_loss_weights'] = bbox_loss_blob
+
+    return blobs
 
 def _sample_rois(roidb, fg_rois_per_image, rois_per_image):
     """

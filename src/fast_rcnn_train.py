@@ -33,20 +33,21 @@ class SolverWrapper(object):
             pb2.text_format.Merge(f.read(), self.solver_param)
 
     def snapshot(self):
-        assert self.bbox_stds is not None
-        assert self.bbox_means is not None
+        if cfg.TRAIN.BBOX_REG:
+            assert self.bbox_stds is not None
+            assert self.bbox_means is not None
 
-        # save original values
-        orig_0 = self.solver.net.params['bbox_pred'][0].data.copy()
-        orig_1 = self.solver.net.params['bbox_pred'][1].data.copy()
+            # save original values
+            orig_0 = self.solver.net.params['bbox_pred'][0].data.copy()
+            orig_1 = self.solver.net.params['bbox_pred'][1].data.copy()
 
-        # scale and shift with bbox reg unnormalization; then save snapshot
-        self.solver.net.params['bbox_pred'][0].data[...] = \
-                (self.solver.net.params['bbox_pred'][0].data *
-                 self.bbox_stds[:, np.newaxis])
-        self.solver.net.params['bbox_pred'][1].data[...] = \
-                (self.solver.net.params['bbox_pred'][1].data *
-                 self.bbox_stds + self.bbox_means)
+            # scale and shift with bbox reg unnormalization; then save snapshot
+            self.solver.net.params['bbox_pred'][0].data[...] = \
+                    (self.solver.net.params['bbox_pred'][0].data *
+                     self.bbox_stds[:, np.newaxis])
+            self.solver.net.params['bbox_pred'][1].data[...] = \
+                    (self.solver.net.params['bbox_pred'][1].data *
+                     self.bbox_stds + self.bbox_means)
 
         output_dir = get_output_path(self.imdb, None)
         if not os.path.exists(output_dir):
@@ -61,9 +62,10 @@ class SolverWrapper(object):
         self.solver.net.save(str(filename))
         print 'Wrote snapshot to: {:s}'.format(filename)
 
-        # restore net to original state
-        self.solver.net.params['bbox_pred'][0].data[...] = orig_0
-        self.solver.net.params['bbox_pred'][1].data[...] = orig_1
+        if cfg.TRAIN.BBOX_REG:
+            # restore net to original state
+            self.solver.net.params['bbox_pred'][0].data[...] = orig_0
+            self.solver.net.params['bbox_pred'][1].data[...] = orig_1
 
     def train_model(self, roidb, max_iters):
         last_snapshot_iter = -1
@@ -77,44 +79,16 @@ class SolverWrapper(object):
                 db_inds = shuffled_inds[shuffled_i:shuffled_i +
                             cfg.TRAIN.IMS_PER_BATCH]
                 minibatch_db = [roidb[i] for i in db_inds]
-                im_blob, rois_blob, labels_blob, \
-                    bbox_targets_blob, bbox_loss_weights_blob = \
-                        finetuning.get_minibatch(minibatch_db)
+                blobs = finetuning.get_minibatch(minibatch_db)
 
-                # Reshape net's input blobs
                 net = self.solver.net
 
-                base_shape = im_blob.shape
-                num_rois = rois_blob.shape[0]
-                bbox_shape = bbox_targets_blob.shape[1]
-
-                net.blobs['data'].reshape(base_shape[0], base_shape[1],
-                                          base_shape[2], base_shape[3])
-                net.blobs['rois'].reshape(num_rois, 5, 1, 1)
-                net.blobs['labels'].reshape(num_rois, 1, 1, 1)
-                net.blobs['bbox_targets'].reshape(num_rois, bbox_shape, 1, 1)
-                net.blobs['bbox_loss_weights'].reshape(num_rois, bbox_shape,
-                                                       1, 1)
-
-                # Copy data into net's input blobs
-                net.blobs['data'].data[...] = \
-                    im_blob.astype(np.float32, copy=False)
-
-                net.blobs['rois'].data[...] = \
-                    rois_blob[:, :, np.newaxis, np.newaxis] \
-                    .astype(np.float32, copy=False)
-
-                net.blobs['labels'].data[...] = \
-                    labels_blob[:, np.newaxis, np.newaxis, np.newaxis] \
-                    .astype(np.float32, copy=False)
-
-                net.blobs['bbox_targets'].data[...] = \
-                    bbox_targets_blob[:, :, np.newaxis, np.newaxis] \
-                    .astype(np.float32, copy=False)
-
-                net.blobs['bbox_loss_weights'].data[...] = \
-                    bbox_loss_weights_blob[:, :, np.newaxis, np.newaxis] \
-                    .astype(np.float32, copy=False)
+                for blob_name, blob in blobs.iteritems():
+                    # Reshape net's input blobs
+                    net.blobs[blob_name].reshape(*(blob.shape))
+                    # Copy data into net's input blobs
+                    net.blobs[blob_name].data[...] = blob.astype(np.float32,
+                                                                 copy=False)
 
                 # Make one SGD update
                 self.solver.step(1)
