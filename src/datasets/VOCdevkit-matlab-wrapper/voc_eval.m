@@ -11,8 +11,8 @@ end
 fprintf('\n~~~~~~~~~~~~~~~~~~~~\n');
 fprintf('Results:\n');
 aps = [res(:).ap]';
-disp(aps);
-disp(mean(aps));
+fprintf('%.1f\n', aps * 100);
+fprintf('%.1f\n', mean(aps) * 100);
 fprintf('~~~~~~~~~~~~~~~~~~~~\n');
 
 function res = voc_eval_cls(cls, VOCopts, comp_id, output_dir, rm_res)
