@@ -102,6 +102,8 @@ class SVMTrainer(object):
         # num_images = 100
         for i in xrange(num_images):
             im = cv2.imread(self.imdb.image_path_at(i))
+            if roidb[i]['flipped']:
+                im = im[:, ::-1, :]
             _t.tic()
             scores, boxes = im_detect(self.net, im, roidb[i]['boxes'])
             _t.toc()
