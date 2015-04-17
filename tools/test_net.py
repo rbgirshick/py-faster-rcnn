@@ -41,6 +41,8 @@ def parse_args():
     parser.add_argument('--imdb', dest='imdb_name',
                         help='dataset to test',
                         default='voc_2007_test', type=str)
+    parser.add_argument('--comp', dest='comp_mode', help='competition mode',
+                        default=False, type=bool)
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -72,4 +74,10 @@ if __name__ == '__main__':
     net.name = os.path.splitext(os.path.basename(args.caffemodel))[0]
 
     imdb = get_imdb(args.imdb_name)
+    if args.comp_mode:
+        if 'use_salt' in imdb.config:
+            imdb.config['use_salt'] = False
+        if 'cleanup' in imdb.config:
+            imdb.config['cleanup'] = False
+
     fast_rcnn_test.test_net(net, imdb)
