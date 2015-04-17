@@ -292,8 +292,15 @@ if __name__ == '__main__':
     imdb_train = get_imdb(args.imdb_name)
     print 'Loaded dataset `{:s}` for training'.format(imdb_train.name)
 
+    # enhance roidb to contain flipped examples
+    if cfg.TRAIN.USE_FLIPPED:
+        print 'Appending horizontally-flipped training examples...'
+        imdb_train.append_flipped_roidb()
+        print 'done'
+
     trainer = SVMTrainer(net, imdb_train)
     trainer.train()
 
     filename = '{}/{}.caffemodel'.format(out_dir, out)
     net.save(filename)
+    print 'Wrote svm model to: {:s}'.format(filename)
