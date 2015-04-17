@@ -152,16 +152,19 @@ class imdb(object):
         for i in xrange(self.num_images):
             boxes = box_list[i]
             num_boxes = boxes.shape[0]
-            gt_boxes = gt_roidb[i]['boxes']
-            gt_classes = gt_roidb[i]['gt_classes']
-            gt_overlaps = \
-                    utils.cython_bbox.bbox_overlaps(boxes.astype(np.float),
-                                                    gt_boxes.astype(np.float))
-            argmaxes = gt_overlaps.argmax(axis=1)
-            maxes = gt_overlaps.max(axis=1)
-            I = np.where(maxes > 0)[0]
             overlaps = np.zeros((num_boxes, self.num_classes), dtype=np.float32)
-            overlaps[I, gt_classes[argmaxes[I]]] = maxes[I]
+
+            if gt_roidb is not None:
+                gt_boxes = gt_roidb[i]['boxes']
+                gt_classes = gt_roidb[i]['gt_classes']
+                gt_overlaps = \
+                        utils.cython_bbox.bbox_overlaps(boxes.astype(np.float),
+                                                        gt_boxes.astype(np.float))
+                argmaxes = gt_overlaps.argmax(axis=1)
+                maxes = gt_overlaps.max(axis=1)
+                I = np.where(maxes > 0)[0]
+                overlaps[I, gt_classes[argmaxes[I]]] = maxes[I]
+
             overlaps = scipy.sparse.csr_matrix(overlaps)
             roidb.append({'boxes' : boxes,
                           'gt_classes' : np.zeros((num_boxes,),
