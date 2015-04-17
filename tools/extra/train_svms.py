@@ -60,6 +60,8 @@ class SVMTrainer(object):
         # num_images = 100
         for i in xrange(num_images):
             im = cv2.imread(self.imdb.image_path_at(i))
+            if roidb[i]['flipped']:
+                im = im[:, ::-1, :]
             gt_inds = np.where(roidb[i]['gt_classes'] > 0)[0]
             gt_boxes = roidb[i]['boxes'][gt_inds]
             _t.tic()
