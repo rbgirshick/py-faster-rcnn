@@ -47,7 +47,7 @@ class SolverWrapper(object):
         self.solver.net.params['bbox_pred'][0].data[...] = \
                 self.solver.net.params['bbox_pred'][0].data * stds
         self.solver.net.params['bbox_pred'][1].data[...] = \
-                self.solver.net.params['bbox_pred'][1].data + means
+                self.solver.net.params['bbox_pred'][1].data * stds + means
 
         output_dir = get_output_path(self.imdb, None)
         if not os.path.exists(output_dir):
