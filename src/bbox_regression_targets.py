@@ -91,4 +91,4 @@ def append_bbox_regression_targets(roidb):
 
     # These values will be needed for making predictions
     # (the predicts will need to be unnormalized and uncentered)
-    return means, stds
+    return means.ravel(), stds.ravel()

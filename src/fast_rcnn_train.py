@@ -36,18 +36,17 @@ class SolverWrapper(object):
         assert self.bbox_stds is not None
         assert self.bbox_means is not None
 
-        stds = self.bbox_stds.ravel()[np.newaxis, np.newaxis, :, np.newaxis]
-        means = self.bbox_means.ravel()[np.newaxis, np.newaxis, np.newaxis, :]
-
         # save original values
         orig_0 = self.solver.net.params['bbox_pred'][0].data.copy()
         orig_1 = self.solver.net.params['bbox_pred'][1].data.copy()
 
         # scale and shift with bbox reg unnormalization; then save snapshot
         self.solver.net.params['bbox_pred'][0].data[...] = \
-                self.solver.net.params['bbox_pred'][0].data * stds
+                (self.solver.net.params['bbox_pred'][0].data *
+                 self.bbox_stds[:, np.newaxis])
         self.solver.net.params['bbox_pred'][1].data[...] = \
-                self.solver.net.params['bbox_pred'][1].data * stds + means
+                (self.solver.net.params['bbox_pred'][1].data *
+                 self.bbox_stds + self.bbox_means)
 
         output_dir = get_output_path(self.imdb, None)
         if not os.path.exists(output_dir):
