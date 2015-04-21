@@ -1,0 +1,5 @@
+EXP_DIR: "no_bbox_reg"
+TRAIN:
+  BBOX_REG: False
+TEST:
+  BBOX_REG: False
