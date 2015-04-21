@@ -97,9 +97,9 @@ __C.TEST.MAX_SIZE   = 1000
 # IoU >= this threshold)
 __C.TEST.NMS        = 0.3
 
-# Experimental: use binary logistic regression scores instead of K-way softmax
-# scores when testing
-__C.TEST.BINARY     = False
+# Experimental: treat the (K+1) units in the cls_score layer as linear
+# predictors (trained, eg, with one-vs-rest SVMs).
+__C.TEST.SVM             = False
 
 # Test using bounding-box regressors
 __C.TEST.BBOX_REG        = True

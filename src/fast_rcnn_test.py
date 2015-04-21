@@ -136,11 +136,10 @@ def im_detect(net, im, boxes):
     net.blobs['rois'].reshape(*(blobs['rois'].shape))
     blobs_out = net.forward(data=blobs['data'].astype(np.float32, copy=False),
                             rois=blobs['rois'].astype(np.float32, copy=False))
-    if cfg.TEST.BINARY:
-        # simulate binary logistic regression
+    if cfg.TEST.SVM:
+        # use the raw scores before softmax under the assumption they
+        # were trained as linear SVMs
         scores = net.blobs['cls_score'].data
-        # Return scores as fg - bg
-        scores = scores - scores[:, 0][:, np.newaxis]
     else:
         # use softmax estimated probabilities
         scores = blobs_out['cls_prob']

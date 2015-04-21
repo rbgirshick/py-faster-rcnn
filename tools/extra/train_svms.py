@@ -265,10 +265,12 @@ def parse_args():
 
 if __name__ == '__main__':
     # Must turn this off to prevent issues when digging into the net blobs to
-    # pull out features
+    # pull out features (tricky!)
     cfg.DEDUP_BOXES = 0
 
-    cfg.TEST.BINARY = True
+    # Must turn this on because we use the test im_detect() method to harvest
+    # hard negatives
+    cfg.TEST.SVM = True
 
     args = parse_args()
 
