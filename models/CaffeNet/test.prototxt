@@ -29,6 +29,7 @@ layer {
   convolution_param {
     num_output: 96
     kernel_size: 11
+    pad: 5
     stride: 4
   }
 }
@@ -46,6 +47,7 @@ layer {
   pooling_param {
     pool: MAX
     kernel_size: 3
+    pad: 1
     stride: 2
   }
 }
@@ -75,8 +77,8 @@ layer {
   }
   convolution_param {
     num_output: 256
-    pad: 2
     kernel_size: 5
+    pad: 2
     group: 2
   }
 }
@@ -94,6 +96,7 @@ layer {
   pooling_param {
     pool: MAX
     kernel_size: 3
+    pad: 1
     stride: 2
   }
 }
@@ -123,8 +126,8 @@ layer {
   }
   convolution_param {
     num_output: 384
-    pad: 1
     kernel_size: 3
+    pad: 1
   }
 }
 layer {
@@ -148,8 +151,8 @@ layer {
   }
   convolution_param {
     num_output: 384
-    pad: 1
     kernel_size: 3
+    pad: 1
     group: 2
   }
 }
@@ -174,8 +177,8 @@ layer {
   }
   convolution_param {
     num_output: 256
-    pad: 1
     kernel_size: 3
+    pad: 1
     group: 2
   }
 }
