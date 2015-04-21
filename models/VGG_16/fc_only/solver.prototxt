@@ -12,5 +12,5 @@ weight_decay: 0.0005
 # function
 snapshot: 0
 # We still use the snapshot prefix, though
-snapshot_prefix: "vgg16_fast_rcnn_fc_only"
+snapshot_prefix: "vgg16_fast_rcnn"
 #debug_info: true

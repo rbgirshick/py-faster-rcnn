@@ -1,0 +1,3 @@
+EXP_DIR: fc_only
+TRAIN:
+  SNAPSHOT_INFIX: fc_only
