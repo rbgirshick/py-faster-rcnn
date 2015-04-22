@@ -7,24 +7,20 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                '..', 'src')))
-
-from fast_rcnn_config import cfg, cfg_from_file
-import fast_rcnn_test
+import _init_paths
+import fast_rcnn as frc
+from fast_rcnn.config import cfg, cfg_from_file
 from datasets.factory import get_imdb
 import caffe
 import argparse
 import pprint
-import time
+import time, os, sys
 
 def parse_args():
     """
     Parse input arguments
     """
-    parser = argparse.ArgumentParser(description='Test a fast R-CNN')
+    parser = argparse.ArgumentParser(description='Test a Fast R-CNN network')
     parser.add_argument('--gpu', dest='gpu_id', help='GPU id to use',
                         default=0, type=int)
     parser.add_argument('--def', dest='prototxt',
@@ -61,7 +57,7 @@ if __name__ == '__main__':
     if args.cfg_file is not None:
         cfg_from_file(args.cfg_file)
 
-    print('Using fast_rcnn_config:')
+    print('Using config:')
     pprint.pprint(cfg)
 
     while not os.path.exists(args.caffemodel) and args.wait:
@@ -80,4 +76,4 @@ if __name__ == '__main__':
         if 'cleanup' in imdb.config:
             imdb.config['cleanup'] = False
 
-    fast_rcnn_test.test_net(net, imdb)
+    frc.test.test_net(net, imdb)

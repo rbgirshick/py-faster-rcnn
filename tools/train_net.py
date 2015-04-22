@@ -7,24 +7,21 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                '..', 'src')))
-
-from fast_rcnn_config import cfg, cfg_from_file
-import fast_rcnn_train
+import _init_paths
+import fast_rcnn as frc
+from fast_rcnn.config import cfg, cfg_from_file
 from datasets.factory import get_imdb
 import caffe
 import argparse
 import pprint
 import numpy as np
+import sys
 
 def parse_args():
     """
     Parse input arguments
     """
-    parser = argparse.ArgumentParser(description='Train a fast R-CNN')
+    parser = argparse.ArgumentParser(description='Train a Fast R-CNN network')
     parser.add_argument('--gpu', dest='gpu_id', help='GPU device id to use [0]',
                         default=0, type=int)
     parser.add_argument('--solver', dest='solver', help='solver prototxt',
@@ -57,7 +54,7 @@ if __name__ == '__main__':
     if args.cfg_file is not None:
         cfg_from_file(args.cfg_file)
 
-    print('Using fast_rcnn_config:')
+    print('Using config:')
     pprint.pprint(cfg)
 
     # fix the random seed for reproducibility
@@ -71,6 +68,6 @@ if __name__ == '__main__':
     imdb_train = get_imdb(args.imdb_name)
     print 'Loaded dataset `{:s}` for training'.format(imdb_train.name)
 
-    fast_rcnn_train.train_net(args.solver, imdb_train,
-                              pretrained_model=args.pretrained_model,
-                              max_iters=args.max_iters)
+    frc.train.train_net(args.solver, imdb_train,
+                        pretrained_model=args.pretrained_model,
+                        max_iters=args.max_iters)

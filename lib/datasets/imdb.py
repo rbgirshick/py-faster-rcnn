@@ -10,7 +10,7 @@ import PIL
 import utils.cython_bbox
 import numpy as np
 import scipy.sparse
-from fast_rcnn_config import cfg
+import datasets
 
 class imdb(object):
     def __init__(self, name):
@@ -62,7 +62,7 @@ class imdb(object):
 
     @property
     def cache_path(self):
-        return os.path.join(cfg.ROOT_DIR, 'data', 'cache')
+        return os.path.join(datasets.ROOT_DIR, 'data', 'cache')
 
     @property
     def num_images(self):

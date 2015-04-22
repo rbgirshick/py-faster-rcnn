@@ -7,21 +7,17 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                '..', 'src')))
-
-import fast_rcnn_config
+import _init_paths
 import caffe
 import argparse
 import numpy as np
+import os, sys
 
 def parse_args():
     """
     Parse input arguments
     """
-    parser = argparse.ArgumentParser(description='Compress a fast R-CNN net')
+    parser = argparse.ArgumentParser(description='Compress a Fast R-CNN network')
     parser.add_argument('--def', dest='prototxt',
                         help='prototxt file defining the uncompressed network',
                         default=None, type=str)

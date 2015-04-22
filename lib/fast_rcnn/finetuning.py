@@ -8,7 +8,7 @@
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-from fast_rcnn_config import cfg
+from fast_rcnn.config import cfg
 import utils.blob
 
 def get_minibatch(roidb):

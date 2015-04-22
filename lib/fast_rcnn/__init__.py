@@ -5,5 +5,6 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-from .imdb import imdb
-from .pascal_voc import pascal_voc
+from . import config
+from . import train
+from . import test

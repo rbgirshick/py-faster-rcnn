@@ -6,7 +6,7 @@
 # --------------------------------------------------------
 
 import numpy as np
-from fast_rcnn_config import cfg
+from fast_rcnn.config import cfg
 import utils.cython_bbox
 
 def _compute_targets(rois, overlaps, labels):

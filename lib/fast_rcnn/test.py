@@ -5,7 +5,7 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-from fast_rcnn_config import cfg, get_output_path
+from fast_rcnn.config import cfg, get_output_path
 import argparse
 from utils.timer import Timer
 import numpy as np

@@ -7,15 +7,10 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                '..', '..', 'src')))
-
-from fast_rcnn_config import cfg, cfg_from_file
-from fast_rcnn_test import im_detect
-import fast_rcnn_train
+import _init_paths
+from fast_rcnn.config import cfg, cfg_from_file
 from datasets.factory import get_imdb
+from fast_rcnn.test import im_detect
 from utils.timer import Timer
 import caffe
 import argparse
@@ -23,6 +18,7 @@ import pprint
 import numpy as np
 import cv2
 from sklearn import svm
+import os, sys
 
 class SVMTrainer(object):
     def __init__(self, net, imdb):
@@ -280,7 +276,7 @@ if __name__ == '__main__':
     if args.cfg_file is not None:
         cfg_from_file(args.cfg_file)
 
-    print('Using fast_rcnn_config:')
+    print('Using config:')
     pprint.pprint(cfg)
 
     # fix the random seed for reproducibility

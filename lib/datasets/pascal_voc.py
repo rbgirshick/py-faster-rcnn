@@ -5,6 +5,7 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
+import datasets
 import datasets.pascal_voc
 import os
 import datasets.imdb
@@ -15,7 +16,6 @@ import scipy.io as sio
 import utils.cython_bbox
 import cPickle
 import subprocess
-from fast_rcnn_config import cfg
 
 class pascal_voc(datasets.imdb):
     def __init__(self, image_set, year, devkit_path=None):
@@ -81,7 +81,7 @@ class pascal_voc(datasets.imdb):
         """
         Return the default path where PASCAL VOC is expected to be installed.
         """
-        return os.path.join(cfg.ROOT_DIR, 'data', 'VOCdevkit' + self._year)
+        return os.path.join(datasets.ROOT_DIR, 'data', 'VOCdevkit' + self._year)
 
     def gt_roidb(self):
         """
@@ -261,7 +261,7 @@ class pascal_voc(datasets.imdb):
         path = os.path.join(os.path.dirname(__file__),
                             'VOCdevkit-matlab-wrapper')
         cmd = 'cd {} && '.format(path)
-        cmd += '{:s} -nodisplay -nodesktop '.format(cfg.MATLAB)
+        cmd += '{:s} -nodisplay -nodesktop '.format(datasets.MATLAB)
         cmd += '-r "dbstop if error; '
         cmd += 'voc_eval(\'{:s}\',\'{:s}\',\'{:s}\',\'{:s}\',{:d}); quit;"' \
                .format(self._devkit_path, comp_id,

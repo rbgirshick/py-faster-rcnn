@@ -18,15 +18,9 @@
 
 import os
 import os.path as osp
-import sys
 import numpy as np
 # `pip install easydict` if you don't have it
 from easydict import EasyDict as edict
-
-# Add caffe to PYTHONPATH
-caffe_path = osp.abspath(osp.join(osp.dirname(__file__), '..',
-                                  'caffe-fast-rcnn', 'python'))
-sys.path.insert(0, caffe_path)
 
 __C = edict()
 # Consumers can get config by:
@@ -126,14 +120,10 @@ __C.RNG_SEED        = 3
 __C.EPS             = 1e-14
 
 # Root directory of project
-__C.ROOT_DIR        = osp.abspath(osp.join(osp.dirname(__file__), '..'))
+__C.ROOT_DIR        = osp.join(osp.dirname(__file__), '..', '..')
 
 # Place outputs under an experiments directory
 __C.EXP_DIR         = 'default'
-
-# The shell command to start matlab
-# If `matlab` is in your path, then this default should work
-__C.MATLAB          = 'matlab'
 
 def get_output_path(imdb, net):
     path = os.path.join(__C.ROOT_DIR, 'output', __C.EXP_DIR, imdb.name)
