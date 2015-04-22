@@ -1,5 +1,6 @@
 EXP_DIR: "no_bbox_reg"
 TRAIN:
   BBOX_REG: False
+  SNAPSHOT_INFIX: no_bbox_reg
 TEST:
   BBOX_REG: False

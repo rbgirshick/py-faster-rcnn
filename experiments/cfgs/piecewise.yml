@@ -1,1 +1,3 @@
-EXP_DIR: "piecewise"
+EXP_DIR: piecewise
+TRAIN:
+  SNAPSHOT_INFIX: piecewise
