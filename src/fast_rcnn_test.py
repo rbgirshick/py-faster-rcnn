@@ -178,7 +178,7 @@ def _vis_detections(im, class_name, dets, thresh=0.3):
             plt.title('{}  {:.3f}'.format(class_name, score))
             plt.pause(1)
 
-def _apply_nms(all_boxes, thresh):
+def apply_nms(all_boxes, thresh):
     num_classes = len(all_boxes)
     num_images = len(all_boxes[0])
     nms_boxes = [[[] for _ in xrange(num_images)]
@@ -269,7 +269,7 @@ def test_net(net, imdb):
         cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL)
 
     print 'Applying NMS to all detections'
-    nms_dets = _apply_nms(all_boxes, cfg.TEST.NMS)
+    nms_dets = apply_nms(all_boxes, cfg.TEST.NMS)
 
     print 'Evaluating detections'
     imdb.evaluate_detections(nms_dets, output_dir)

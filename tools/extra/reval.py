@@ -18,7 +18,7 @@ def main(imdb_name, output_dir):
         dets = cPickle.load(f)
 
     print 'Applying NMS to all detections'
-    nms_dets = fast_rcnn_test._apply_nms(dets, cfg.TEST.NMS)
+    nms_dets = fast_rcnn_test.apply_nms(dets, cfg.TEST.NMS)
 
     print 'Evaluating detections'
     imdb.evaluate_detections(nms_dets, output_dir)
