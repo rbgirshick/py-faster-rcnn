@@ -31,72 +31,72 @@ cfg = __C
 # Training options
 #
 
-__C.TRAIN                 = edict()
+__C.TRAIN = edict()
 
 # Scales to use during training (can list multiple scales)
 # Each scale is the pixel size of an image's shortest side
-__C.TRAIN.SCALES          = (600,)
+__C.TRAIN.SCALES = (600,)
 
 # Max pixel size of the longest side of a scaled input image
-__C.TRAIN.MAX_SIZE        = 1000
+__C.TRAIN.MAX_SIZE = 1000
 
 # Images to use per minibatch
-__C.TRAIN.IMS_PER_BATCH   = 2
+__C.TRAIN.IMS_PER_BATCH = 2
 
 # Minibatch size (number of regions of interest [ROIs])
-__C.TRAIN.BATCH_SIZE      = 128
+__C.TRAIN.BATCH_SIZE = 128
 
 # Fraction of minibatch that is labeled foreground (i.e. class > 0)
-__C.TRAIN.FG_FRACTION     = 0.25
+__C.TRAIN.FG_FRACTION = 0.25
 
 # Overlap threshold for a ROI to be considered foreground (if >= FG_THRESH)
-__C.TRAIN.FG_THRESH       = 0.5
+__C.TRAIN.FG_THRESH = 0.5
 
 # Overlap threshold for a ROI to be considered background (class = 0 if
 # overlap in [LO, HI))
-__C.TRAIN.BG_THRESH_HI    = 0.5
-__C.TRAIN.BG_THRESH_LO    = 0.1
+__C.TRAIN.BG_THRESH_HI = 0.5
+__C.TRAIN.BG_THRESH_LO = 0.1
 
 # Use horizontally-flipped images during training?
-__C.TRAIN.USE_FLIPPED     = True
+__C.TRAIN.USE_FLIPPED = True
 
 # Train bounding-box regressors
-__C.TRAIN.BBOX_REG        = True
+__C.TRAIN.BBOX_REG = True
 
 # Overlap required between a ROI and ground-truth box in order for that ROI to
 # be used as a bounding-box regression training example
-__C.TRAIN.BBOX_THRESH     = 0.5
+__C.TRAIN.BBOX_THRESH = 0.5
 
 # Iterations between snapshots
-__C.TRAIN.SNAPSHOT_ITERS  = 10000
+__C.TRAIN.SNAPSHOT_ITERS = 10000
 
 # solver.prototxt specifies the snapshot path prefix, this adds an optional
 # infix to yield the path: <prefix>[_<infix>]_iters_XYZ.caffemodel
-__C.TRAIN.SNAPSHOT_INFIX  = ''
+__C.TRAIN.SNAPSHOT_INFIX = ''
 
 #
 # Testing options
 #
 
-__C.TEST            = edict()
+__C.TEST = edict()
 
 # Scales to use during testing (can list multiple scales)
 # Each scale is the pixel size of an image's shortest side
-__C.TEST.SCALES     = (600,)
+__C.TEST.SCALES = (600,)
 
 # Max pixel size of the longest side of a scaled input image
-__C.TEST.MAX_SIZE   = 1000
+__C.TEST.MAX_SIZE = 1000
 
 # Overlap threshold used for non-maximum suppression (suppress boxes with
 # IoU >= this threshold)
-__C.TEST.NMS        = 0.3
+__C.TEST.NMS = 0.3
 
 # Experimental: treat the (K+1) units in the cls_score layer as linear
 # predictors (trained, eg, with one-vs-rest SVMs).
-__C.TEST.SVM             = False
+__C.TEST.SVM = False
 
 # Test using bounding-box regressors
-__C.TEST.BBOX_REG        = True
+__C.TEST.BBOX_REG = True
 
 #
 # MISC
@@ -107,30 +107,30 @@ __C.TEST.BBOX_REG        = True
 # coordinates. If DEDUP_BOXES > 0, then DEDUP_BOXES is used as the scale factor
 # for identifying duplicate boxes.
 # 1/16 is correct for {Alex,Caffe}Net, VGG_CNN_M_1024, and VGG_16
-__C.DEDUP_BOXES     = 1./16.
+__C.DEDUP_BOXES = 1./16.
 
 # Pixel mean values (BGR order) as a (1, 1, 3) array
 # These are the values originally used for training VGG_16
-__C.PIXEL_MEANS     = np.array([[[102.9801, 115.9465, 122.7717]]])
+__C.PIXEL_MEANS = np.array([[[102.9801, 115.9465, 122.7717]]])
 
 # For reproducibility
-__C.RNG_SEED        = 3
+__C.RNG_SEED = 3
 
 # A small number that's used many times
-__C.EPS             = 1e-14
+__C.EPS = 1e-14
 
 # Root directory of project
-__C.ROOT_DIR        = osp.join(osp.dirname(__file__), '..', '..')
+__C.ROOT_DIR = ops.abspath(osp.join(osp.dirname(__file__), '..', '..'))
 
 # Place outputs under an experiments directory
-__C.EXP_DIR         = 'default'
+__C.EXP_DIR = 'default'
 
 def get_output_path(imdb, net):
-    path = os.path.join(__C.ROOT_DIR, 'output', __C.EXP_DIR, imdb.name)
+    path = osp.abspath(osp.join(__C.ROOT_DIR, 'output', __C.EXP_DIR, imdb.name))
     if net is None:
         return path
     else:
-        return os.path.join(path, net.name)
+        return osp.join(path, net.name)
 
 def _merge_a_into_b(a, b):
     """
@@ -146,8 +146,9 @@ def _merge_a_into_b(a, b):
 
         # the types must match, too
         if type(b[k]) is not type(v):
-            raise ValueError('Type mismatch ({} vs. {}) for config key: {}'.
-                              format(type(b[k]), type(v), k))
+            raise ValueError(('Type mismatch ({} vs. {}) '
+                              'for config key: {}').format(type(b[k]),
+                                                           type(v), k))
 
         # recursively merge dicts
         if type(v) is edict:
@@ -165,7 +166,6 @@ def cfg_from_file(filename):
     file.
     """
     import yaml
-    global __C
     with open(filename, 'r') as f:
         yaml_cfg = edict(yaml.load(f))
 
