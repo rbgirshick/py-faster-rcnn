@@ -16,20 +16,53 @@ import caffe
 import argparse
 import pprint
 import numpy as np
+import numpy.random as npr
 import cv2
 from sklearn import svm
 import os, sys
 
 class SVMTrainer(object):
+    """
+    Trains post-hoc detection SVMs for all classes using the algorithm
+    and hyper-parameters of traditional R-CNN.
+    """
+
     def __init__(self, net, imdb):
         self.imdb = imdb
         self.net = net
-        dim = net.params['cls_score'][0].data.shape[1]
-        print('Feature dim: {}'.format(dim))
-        self.trainers = [SVMClassTrainer(cls, dim) for cls in imdb.classes]
         self.layer = 'fc7'
         self.hard_thresh = -1.0001
         self.neg_iou_thresh = 0.3
+
+        dim = net.params['cls_score'][0].data.shape[1]
+        scale = self._get_feature_scale()
+        print('Feature dim: {}'.format(dim))
+        print('Feature scale: {:.3f}'.format(scale))
+        self.trainers = [SVMClassTrainer(cls, dim, feature_scale=scale)
+                         for cls in imdb.classes]
+
+    def _get_feature_scale(self, num_images=100):
+        TARGET_NORM = 20.0 # Magic value from traditional R-CNN
+        _t = Timer()
+        roidb = self.imdb.roidb
+        total_norm = 0.0
+        count = 0.0
+        inds = npr.choice(xrange(self.imdb.num_images), size=num_images,
+                          replace=False)
+        for i_, i in enumerate(inds):
+            im = cv2.imread(self.imdb.image_path_at(i))
+            if roidb[i]['flipped']:
+                im = im[:, ::-1, :]
+            _t.tic()
+            scores, boxes = im_detect(self.net, im, roidb[i]['boxes'])
+            _t.toc()
+            feat = self.net.blobs[self.layer].data
+            total_norm += np.sqrt((feat ** 2).sum(axis=1)).sum()
+            count += feat.shape[0]
+            print('{}/{}: avg feature norm: {:.3f}'.format(i_ + 1, num_images,
+                                                           total_norm / count))
+
+        return TARGET_NORM * 1.0 / (total_norm / count)
 
     def _get_pos_counts(self):
         counts = np.zeros((len(self.imdb.classes)), dtype=np.int)
@@ -74,6 +107,7 @@ class SVMTrainer(object):
                   .format(i + 1, len(roidb), _t.average_time)
 
     def initialize_net(self):
+        # Start all SVM parameters at zero
         self.net.params['cls_score'][0].data[...] = 0
         self.net.params['cls_score'][1].data[...] = 0
 
@@ -107,21 +141,23 @@ class SVMTrainer(object):
             _t.toc()
             feat = self.net.blobs[self.layer].data
             for j in xrange(1, self.imdb.num_classes):
-                hard_inds = np.where((scores[:, j] > self.hard_thresh) &
-                                     (roidb[i]['gt_overlaps'][:, j].toarray().ravel() <
-                                      self.neg_iou_thresh))[0]
+                hard_inds = \
+                    np.where((scores[:, j] > self.hard_thresh) &
+                             (roidb[i]['gt_overlaps'][:, j].toarray().ravel() <
+                              self.neg_iou_thresh))[0]
                 if len(hard_inds) > 0:
                     hard_feat = feat[hard_inds, :].copy()
-                    new_w_b = self.trainers[j].append_neg_and_retrain(feat=hard_feat)
+                    new_w_b = \
+                        self.trainers[j].append_neg_and_retrain(feat=hard_feat)
                     if new_w_b is not None:
                         self.update_net(j, new_w_b[0], new_w_b[1])
 
-            print 'train_with_hard_negatives: {:d}/{:d} {:.3f}s' \
-                  .format(i + 1, len(roidb), _t.average_time)
-
+            print(('train_with_hard_negatives: '
+                   '{:d}/{:d} {:.3f}s').format(i + 1, len(roidb),
+                                               _t.average_time))
 
     def train(self):
-        # 3) Initialize SVMs using
+        # Initialize SVMs using
         #   a. w_i = fc8_w_i - fc8_w_0
         #   b. b_i = fc8_b_i - fc8_b_0
         #   c. Install SVMs into net
@@ -148,14 +184,11 @@ class SVMTrainer(object):
             new_w_b = self.trainers[j].append_neg_and_retrain(force=True)
             self.update_net(j, new_w_b[0], new_w_b[1])
 
-
-
-#        7) Save net
-
-
-
 class SVMClassTrainer(object):
-    def __init__(self, cls, dim, C=0.001, B=10.0, pos_weight=2.0):
+    """Manages post-hoc SVM training for a single object class."""
+
+    def __init__(self, cls, dim, feature_scale=1.0,
+                 C=0.001, B=10.0, pos_weight=2.0):
         self.pos = np.zeros((0, dim), dtype=np.float32)
         self.neg = np.zeros((0, dim), dtype=np.float32)
         self.B = B
@@ -163,6 +196,7 @@ class SVMClassTrainer(object):
         self.cls = cls
         self.pos_weight = pos_weight
         self.dim = dim
+        self.feature_scale = feature_scale
         self.svm = svm.LinearSVC(C=C, class_weight={1: 2, -1: 1},
                                  intercept_scaling=B, verbose=1,
                                  penalty='l2', loss='l1',
@@ -188,7 +222,7 @@ class SVMClassTrainer(object):
         num_neg = self.neg.shape[0]
         print('Cache holds {} pos examples and {} neg examples'.
               format(num_pos, num_neg))
-        X = np.vstack((self.pos, self.neg))
+        X = np.vstack((self.pos, self.neg)) * self.feature_scale
         y = np.hstack((np.ones(num_pos),
                        -np.ones(num_neg)))
         self.svm.fit(X, y)
@@ -198,17 +232,19 @@ class SVMClassTrainer(object):
         pos_scores = scores[:num_pos]
         neg_scores = scores[num_pos:]
 
-        pos_loss = self.C * self.pos_weight * np.maximum(0, 1 - pos_scores).sum()
+        pos_loss = (self.C * self.pos_weight *
+                    np.maximum(0, 1 - pos_scores).sum())
         neg_loss = self.C * np.maximum(0, 1 + neg_scores).sum()
         reg_loss = 0.5 * np.dot(w.ravel(), w.ravel()) + 0.5 * b ** 2
         tot_loss = pos_loss + neg_loss + reg_loss
         self.loss_history.append((tot_loss, pos_loss, neg_loss, reg_loss))
 
         for i, losses in enumerate(self.loss_history):
-            print('    {:d}: obj val: {:.3f} = {:.3f} (pos) + {:.3f} (neg) + {:.3f} (reg)'.
-                  format(i, *losses))
+            print(('    {:d}: obj val: {:.3f} = {:.3f} '
+                   '(pos) + {:.3f} (neg) + {:.3f} (reg)').format(i, *losses))
 
-        return (w, b), pos_scores, neg_scores
+        return ((w * self.feature_scale, b * self.feature_scale),
+                pos_scores, neg_scores)
 
     def append_neg_and_retrain(self, feat=None, force=False):
         if feat is not None:
