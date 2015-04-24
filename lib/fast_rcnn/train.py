@@ -7,10 +7,9 @@
 
 from fast_rcnn.config import cfg, get_output_path
 import numpy as np
-import cv2
 import caffe
-import finetuning
-import bbox_regression_targets
+import fast_rcnn.finetuning as finetuning
+import fast_rcnn.bbox_regression_targets as bbox_regression_targets
 import os
 
 from caffe.proto import caffe_pb2
@@ -77,7 +76,7 @@ class SolverWrapper(object):
             for shuffled_i in xrange(0, len(shuffled_inds),
                                      cfg.TRAIN.IMS_PER_BATCH):
                 db_inds = shuffled_inds[shuffled_i:shuffled_i +
-                            cfg.TRAIN.IMS_PER_BATCH]
+                                        cfg.TRAIN.IMS_PER_BATCH]
                 minibatch_db = [roidb[i] for i in db_inds]
                 blobs = finetuning.get_minibatch(minibatch_db)
 

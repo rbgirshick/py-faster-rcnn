@@ -14,11 +14,10 @@ import caffe
 import utils.cython_nms
 import cPickle
 import heapq
-import utils.blob
+from utils.blob import im_list_to_blob
 import os
 
 def _get_image_blob(im):
-    im_pyra = []
     im_orig = im.astype(np.float32, copy=True)
     im_orig -= cfg.PIXEL_MEANS
 
@@ -40,7 +39,7 @@ def _get_image_blob(im):
         processed_ims.append(im)
 
     # Create a blob to hold the input images
-    blob = utils.blob.im_list_to_blob(processed_ims)
+    blob = im_list_to_blob(processed_ims)
 
     return blob, np.array(im_scale_factors)
 
@@ -117,7 +116,7 @@ def _clip_boxes(boxes, im_shape):
     return boxes
 
 def im_detect(net, im, boxes):
-    blobs, im_scale_factors = _get_blobs(im, boxes)
+    blobs, unused_im_scale_factors = _get_blobs(im, boxes)
 
     # When mapping from image ROIs to feature map ROIs, there's some aliasing
     # (some distinct image ROIs get mapped to the same feature ROI).
