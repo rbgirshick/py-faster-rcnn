@@ -21,13 +21,13 @@
 Train a Fast R-CNN detector. For example, train a VGG 16 network on VOC 2007 trainval:
 
 ```
-./tools/train_net.py --gpu 0 --solver models/VGG_16/solver.prototxt --weights /data/reference_caffe_nets/VGG_ILSVRC_16_layers.v2.caffemodel
+./tools/train_net.py --gpu 0 --solver models/VGG16/solver.prototxt --weights data/imagenet_models/VGG16.v2.caffemodel
 ```
 
 Test a Fast R-CNN detector. For example, test the VGG 16 network on VOC 2007 test:
 
 ```
-./tools/test_net.py --gpu 1 --def models/VGG_16/test.prototxt --net snapshots/vgg16_fast_rcnn_iter_40000.caffemodel
+./tools/test_net.py --gpu 1 --def models/VGG16/test.prototxt --net output/voc_2007_trainval/vgg16_fast_rcnn_iter_40000.caffemodel
 ```
 
 Test output is written underneath `$FRCNN/output`.
@@ -35,5 +35,5 @@ Test output is written underneath `$FRCNN/output`.
 Compress a Fast R-CNN model using SVD on the fully-connected layers:
 
 ```
-./tools/compress_model.py --def models/VGG_16/test.prototxt --def-svd models/VGG_16/compressed/test.prototxt --net snapshots/vgg16_fast_rcnn_iter_40000.caffemodel
+./tools/compress_model.py --def models/VGG16/test.prototxt --def-svd models/VGG16/compressed/test.prototxt --net output/voc_2007_trainval/vgg16_fast_rcnn_iter_40000.caffemodel
 ```

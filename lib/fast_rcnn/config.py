@@ -106,11 +106,11 @@ __C.TEST.BBOX_REG = True
 # some boxes that are distinct in image space to become identical in feature
 # coordinates. If DEDUP_BOXES > 0, then DEDUP_BOXES is used as the scale factor
 # for identifying duplicate boxes.
-# 1/16 is correct for {Alex,Caffe}Net, VGG_CNN_M_1024, and VGG_16
+# 1/16 is correct for {Alex,Caffe}Net, VGG_CNN_M_1024, and VGG16
 __C.DEDUP_BOXES = 1./16.
 
 # Pixel mean values (BGR order) as a (1, 1, 3) array
-# These are the values originally used for training VGG_16
+# These are the values originally used for training VGG16
 __C.PIXEL_MEANS = np.array([[[102.9801, 115.9465, 122.7717]]])
 
 # For reproducibility

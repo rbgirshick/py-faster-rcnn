@@ -62,11 +62,11 @@ def compress_weights(W, l):
 def main():
     args = parse_args()
 
-    # prototxt = 'models/VGG_16/test.prototxt'
+    # prototxt = 'models/VGG16/test.prototxt'
     # caffemodel = 'snapshots/vgg16_fast_rcnn_iter_40000.caffemodel'
     net = caffe.Net(args.prototxt, args.caffemodel, caffe.TEST)
 
-    # prototxt_svd = 'models/VGG_16/svd/test_fc6_fc7.prototxt'
+    # prototxt_svd = 'models/VGG16/svd/test_fc6_fc7.prototxt'
     # caffemodel = 'snapshots/vgg16_fast_rcnn_iter_40000.caffemodel'
     net_svd = caffe.Net(args.prototxt_svd, args.caffemodel, caffe.TEST)
 

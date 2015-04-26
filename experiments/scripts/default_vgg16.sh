@@ -11,7 +11,7 @@ echo Logging output to "$LOG"
 
 time ./tools/train_net.py --gpu $1 \
   --solver models/VGG16/solver.prototxt \
-  --weights data/imagenet_models/VGG_ILSVRC_16_layers.v2.caffemodel \
+  --weights data/imagenet_models/VGG16.v2.caffemodel \
   --imdb voc_2007_trainval
 
 time ./tools/test_net.py --gpu $1 \
