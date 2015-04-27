@@ -327,17 +327,16 @@ if __name__ == '__main__':
     out = os.path.splitext(os.path.basename(args.caffemodel))[0] + '_svm'
     out_dir = os.path.dirname(args.caffemodel)
 
-    imdb_train = get_imdb(args.imdb_name)
-    print 'Loaded dataset `{:s}` for training'.format(imdb_train.name)
+    imdb = get_imdb(args.imdb_name)
+    print 'Loaded dataset `{:s}` for training'.format(imdb.name)
 
     # enhance roidb to contain flipped examples
     if cfg.TRAIN.USE_FLIPPED:
         print 'Appending horizontally-flipped training examples...'
-        imdb_train.append_flipped_roidb()
+        imdb.append_flipped_roidb()
         print 'done'
 
-    trainer = SVMTrainer(net, imdb_train)
-    trainer.train()
+    SVMTrainer(net, imdb).train()
 
     filename = '{}/{}.caffemodel'.format(out_dir, out)
     net.save(filename)

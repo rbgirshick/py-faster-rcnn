@@ -8,7 +8,7 @@
 # --------------------------------------------------------
 
 import _init_paths
-import fast_rcnn as frc
+from fast_rcnn.test import test_net
 from fast_rcnn.config import cfg, cfg_from_file
 from datasets.factory import get_imdb
 import caffe
@@ -47,7 +47,6 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-
 if __name__ == '__main__':
     args = parse_args()
 
@@ -76,4 +75,4 @@ if __name__ == '__main__':
         if 'cleanup' in imdb.config:
             imdb.config['cleanup'] = False
 
-    frc.test.test_net(net, imdb)
+    test_net(net, imdb)

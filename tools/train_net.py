@@ -65,11 +65,11 @@ if __name__ == '__main__':
     if args.gpu_id is not None:
         caffe.set_device(args.gpu_id)
 
-    imdb_train = get_imdb(args.imdb_name)
-    print 'Loaded dataset `{:s}` for training'.format(imdb_train.name)
-    roidb = get_training_roidb(imdb_train)
+    imdb = get_imdb(args.imdb_name)
+    print 'Loaded dataset `{:s}` for training'.format(imdb.name)
+    roidb = get_training_roidb(imdb)
 
-    output_dir = get_output_dir(imdb_train, None)
+    output_dir = get_output_dir(imdb, None)
     print 'Output will be saved to `{:s}`'.format(output_dir)
 
     train_net(args.solver, roidb, output_dir,

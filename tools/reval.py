@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import _init_paths
-import fast_rcnn as frc
+from fast_rcnn.test import apply_nms
 from fast_rcnn.config import cfg
 from datasets.factory import get_imdb
 import cPickle
@@ -36,7 +36,7 @@ def from_dets(imdb_name, output_dir):
         dets = cPickle.load(f)
 
     print 'Applying NMS to all detections'
-    nms_dets = frc.test.apply_nms(dets, cfg.TEST.NMS)
+    nms_dets = apply_nms(dets, cfg.TEST.NMS)
 
     print 'Evaluating detections'
     imdb.evaluate_detections(nms_dets, output_dir)
