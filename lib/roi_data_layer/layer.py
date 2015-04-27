@@ -10,6 +10,7 @@ from fast_rcnn.config import cfg
 from roi_data_layer.minibatch import get_minibatch
 import numpy as np
 import yaml
+from multiprocessing import Process, queues
 
 class DataLayer(caffe.Layer):
     """Fast R-CNN data layer."""
@@ -26,16 +27,34 @@ class DataLayer(caffe.Layer):
         self._cur += cfg.TRAIN.IMS_PER_BATCH
         return db_inds
 
-    def _set_next_minibatch(self):
+    @staticmethod
+    def _prefetch(minibatch_db, num_classes, output_queue):
+        blobs = get_minibatch(minibatch_db, num_classes)
+        output_queue.put(blobs)
+
+    def _get_next_minibatch(self):
         db_inds = self._get_next_minibatch_inds()
         minibatch_db = [self._roidb[i] for i in db_inds]
-        self._blobs = get_minibatch(minibatch_db, self._num_classes)
+        if cfg.TRAIN.USE_PREFETCH:
+            self._prefetch_process = Process(target=DataLayer._prefetch,
+                                             args=(minibatch_db,
+                                                   self._num_classes,
+                                                   self._prefetch_queue))
+            self._prefetch_process.start()
+        else:
+            return get_minibatch(minibatch_db, self._num_classes)
 
     def set_roidb(self, roidb):
         self._roidb = roidb
         self._shuffle_roidb_inds()
+        if cfg.TRAIN.USE_PREFETCH:
+            self._get_next_minibatch()
 
     def setup(self, bottom, top):
+        if cfg.TRAIN.USE_PREFETCH:
+            self._prefetch_process = None
+            self._prefetch_queue = queues.SimpleQueue()
+
         layer_params = yaml.load(self.param_str_)
 
         self._num_classes = layer_params['num_classes']
@@ -58,23 +77,19 @@ class DataLayer(caffe.Layer):
         # bbox_loss_weights
         top[4].reshape(1, self._num_classes * 4)
 
-        # TODO(rbg):
-        # Start a prefetch thread that calls self._get_next_minibatch()
-
     def forward(self, bottom, top):
-        # TODO(rbg):
-        # wait for prefetch thread to finish
-        self._set_next_minibatch()
+        if cfg.TRAIN.USE_PREFETCH:
+            blobs = self._prefetch_queue.get()
+            self._get_next_minibatch()
+        else:
+            blobs = self._get_next_minibatch()
 
-        for blob_name, blob in self._blobs.iteritems():
+        for blob_name, blob in blobs.iteritems():
             top_ind = self._name_to_top_map[blob_name]
             # Reshape net's input blobs
             top[top_ind].reshape(*(blob.shape))
             # Copy data into net's input blobs
             top[top_ind].data[...] = blob.astype(np.float32, copy=False)
-
-        # TODO(rbg):
-        # start next prefetch thread
 
     def backward(self, top, propagate_down, bottom):
         """This layer does not propagate gradients."""

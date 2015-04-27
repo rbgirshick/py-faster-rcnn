@@ -8,6 +8,7 @@
 import caffe
 from fast_rcnn.config import cfg
 import roi_data_layer.roidb as rdl_roidb
+from utils.timer import Timer
 import numpy as np
 import os
 
@@ -71,9 +72,14 @@ class SolverWrapper(object):
 
     def train_model(self, max_iters):
         last_snapshot_iter = -1
+        timer = Timer()
         while self.solver.iter < max_iters:
             # Make one SGD update
+            timer.tic()
             self.solver.step(1)
+            timer.toc()
+            if self.solver.iter % (10 * self.solver_param.display) == 0:
+                print 'speed: {:.3f}s / iter'.format(timer.average_time)
 
             if self.solver.iter % cfg.TRAIN.SNAPSHOT_ITERS == 0:
                 last_snapshot_iter = self.solver.iter
