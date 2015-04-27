@@ -12,7 +12,7 @@ import numpy as np
 import yaml
 from multiprocessing import Process, queues
 
-class DataLayer(caffe.Layer):
+class RoIDataLayer(caffe.Layer):
     """Fast R-CNN data layer."""
 
     def _shuffle_roidb_inds(self):
@@ -36,7 +36,7 @@ class DataLayer(caffe.Layer):
         db_inds = self._get_next_minibatch_inds()
         minibatch_db = [self._roidb[i] for i in db_inds]
         if cfg.TRAIN.USE_PREFETCH:
-            self._prefetch_process = Process(target=DataLayer._prefetch,
+            self._prefetch_process = Process(target=RoIDataLayer._prefetch,
                                              args=(minibatch_db,
                                                    self._num_classes,
                                                    self._prefetch_queue))
