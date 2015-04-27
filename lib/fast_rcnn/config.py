@@ -5,16 +5,16 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-#
-# README
-#
-# This file specifies default config options for Fast R-CNN. You should not
-# change values in this file. Instead, you should write a config YAML file
-# and use cfg_from_file(yaml_file) to load it and override the default options.
-#
-# - See tools/{train,test}_net.py for example code that uses cfg_from_file().
-# - See experiments/cfgs/*.yml for example YAML config override files.
-#
+"""Fast R-CNN config system.
+
+This file specifies default config options for Fast R-CNN. You should not
+change values in this file. Instead, you should write a config file (in yaml)
+and use cfg_from_file(yaml_file) to load it and override the default options.
+
+Most tools in $ROOT/tools take a --cfg option to specify an override file.
+    - See tools/{train,test}_net.py for example code that uses cfg_from_file()
+    - See experiments/cfgs/*.yml for example YAML config override files
+"""
 
 import os
 import os.path as osp
@@ -130,6 +130,11 @@ __C.ROOT_DIR = osp.abspath(osp.join(osp.dirname(__file__), '..', '..'))
 __C.EXP_DIR = 'default'
 
 def get_output_dir(imdb, net):
+    """Return the directory where experimental artifacts are placed.
+
+    A canonical path is built using the name from an imdb and a network
+    (if not None).
+    """
     path = osp.abspath(osp.join(__C.ROOT_DIR, 'output', __C.EXP_DIR, imdb.name))
     if net is None:
         return path
@@ -137,12 +142,12 @@ def get_output_dir(imdb, net):
         return osp.join(path, net.name)
 
 def _merge_a_into_b(a, b):
-    """
-    Merge config dictionary a into config dictionary b, clobbering the options
-    in b whenever they are also specified in a.
+    """Merge config dictionary a into config dictionary b, clobbering the
+    options in b whenever they are also specified in a.
     """
     if type(a) is not edict:
         return
+
     for k, v in a.iteritems():
         # a must specify keys that are in b
         if not b.has_key(k):
@@ -165,10 +170,7 @@ def _merge_a_into_b(a, b):
             b[k] = v
 
 def cfg_from_file(filename):
-    """
-    Load a config file and merge it into the default options specified in this
-    file.
-    """
+    """Load a config file and merge it into the default options."""
     import yaml
     with open(filename, 'r') as f:
         yaml_cfg = edict(yaml.load(f))

@@ -5,6 +5,8 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
+"""Test a Fast R-CNN network on an imdb (image database)."""
+
 from fast_rcnn.config import cfg, get_output_dir
 import argparse
 from utils.timer import Timer
@@ -18,6 +20,16 @@ from utils.blob import im_list_to_blob
 import os
 
 def _get_image_blob(im):
+    """Converts an image into a network input.
+
+    Arguments:
+        im (ndarray): a color image in BGR order
+
+    Returns:
+        blob (ndarray): a data blob holding an image pyramid
+        im_scale_factors (list): list of image scales (relative to im) used
+            in the image pyramid
+    """
     im_orig = im.astype(np.float32, copy=True)
     im_orig -= cfg.PIXEL_MEANS
 
@@ -44,11 +56,30 @@ def _get_image_blob(im):
     return blob, np.array(im_scale_factors)
 
 def _get_rois_blob(im_rois, im_scale_factors):
-    rois, levels = _scale_im_rois(im_rois, im_scale_factors)
-    rois_blob = np.hstack((levels, rois))[:, :, np.newaxis, np.newaxis]
+    """Converts RoIs into network inputs.
+
+    Arguments:
+        im_rois (ndarray): R x 4 matrix of RoIs in original image coordinates
+        im_scale_factors (list): scale factors as returned by _get_image_blob
+
+    Returns:
+        blob (ndarray): R x 5 matrix of RoIs in the image pyramid
+    """
+    rois, levels = _project_im_rois(im_rois, im_scale_factors)
+    rois_blob = np.hstack((levels, rois))
     return rois_blob.astype(np.float32, copy=False)
 
-def _scale_im_rois(im_rois, scales):
+def _project_im_rois(im_rois, scales):
+    """Project image RoIs into the image pyramid built by _get_image_blob.
+
+    Arguments:
+        im_rois (ndarray): R x 4 matrix of RoIs in original image coordinates
+        scales (list): scale factors as returned by _get_image_blob
+
+    Returns:
+        rois (ndarray): R x 4 matrix of projected RoI coordinates
+        levels (list): image pyramid levels used by each projected RoI
+    """
     im_rois = im_rois.astype(np.float, copy=False)
 
     if len(scales) > 1:
@@ -67,12 +98,16 @@ def _scale_im_rois(im_rois, scales):
     return rois, levels
 
 def _get_blobs(im, rois):
+    """Convert an image and RoIs within that image into network inputs."""
     blobs = {'data' : None, 'rois' : None}
     blobs['data'], im_scale_factors = _get_image_blob(im)
     blobs['rois'] = _get_rois_blob(rois, im_scale_factors)
     return blobs, im_scale_factors
 
 def _bbox_pred(boxes, box_deltas):
+    """Transform the set of class-agnostic boxes into class-specific boxes
+    by applying the predicted offsets (box_deltas)
+    """
     if boxes.shape[0] == 0:
         return np.zeros((0, box_deltas.shape[1]))
 
@@ -105,6 +140,7 @@ def _bbox_pred(boxes, box_deltas):
     return pred_boxes
 
 def _clip_boxes(boxes, im_shape):
+    """Clip boxes to image boundaries."""
     # x1 >= 0
     boxes[:, 0::4] = np.maximum(boxes[:, 0::4], 0)
     # y1 >= 0
@@ -116,6 +152,18 @@ def _clip_boxes(boxes, im_shape):
     return boxes
 
 def im_detect(net, im, boxes):
+    """Detect object classes in an image given object proposals.
+
+    Arguments:
+        net (caffe.Net): Fast R-CNN network to use
+        im (ndarray): color image to test (in BGR order)
+        boxes (ndarray): R x 4 array of object proposals
+
+    Returns:
+        scores (ndarray): R x K array of object class scores (K includes
+            background as object category 0)
+        boxes (ndarray): R x (4*K) array of predicted bounding boxes
+    """
     blobs, unused_im_scale_factors = _get_blobs(im, boxes)
 
     # When mapping from image ROIs to feature map ROIs, there's some aliasing
@@ -124,10 +172,10 @@ def im_detect(net, im, boxes):
     # on the unique subset.
     if cfg.DEDUP_BOXES > 0:
         v = np.array([1, 1e3, 1e6, 1e9, 1e12])
-        hashes = np.round(blobs['rois'][:, :, 0, 0] * cfg.DEDUP_BOXES).dot(v)
+        hashes = np.round(blobs['rois'] * cfg.DEDUP_BOXES).dot(v)
         _, index, inv_index = np.unique(hashes, return_index=True,
                                         return_inverse=True)
-        blobs['rois'] = blobs['rois'][index, :, :, :]
+        blobs['rois'] = blobs['rois'][index, :]
         boxes = boxes[index, :]
 
     # reshape network inputs
@@ -160,6 +208,7 @@ def im_detect(net, im, boxes):
     return scores, pred_boxes
 
 def _vis_detections(im, class_name, dets, thresh=0.3):
+    """Visual debugging of detections."""
     import matplotlib.pyplot as plt
     im = im[:, :, (2, 1, 0)]
     for i in xrange(np.minimum(10, dets.shape[0])):
@@ -178,6 +227,9 @@ def _vis_detections(im, class_name, dets, thresh=0.3):
             plt.pause(1)
 
 def apply_nms(all_boxes, thresh):
+    """Apply non-maximum suppression to all predicted boxes output by the
+    test_net method.
+    """
     num_classes = len(all_boxes)
     num_images = len(all_boxes[0])
     nms_boxes = [[[] for _ in xrange(num_images)]
@@ -194,6 +246,7 @@ def apply_nms(all_boxes, thresh):
     return nms_boxes
 
 def test_net(net, imdb):
+    """Test a Fast R-CNN network on an image database."""
     num_images = len(imdb.image_index)
     # heuristic: keep an average of 40 detections per class per images prior
     # to NMS

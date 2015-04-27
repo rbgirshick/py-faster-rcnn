@@ -7,12 +7,14 @@
 
 import os
 import PIL
-import utils.cython_bbox
+from utils.cython_bbox import bbox_overlaps
 import numpy as np
 import scipy.sparse
 import datasets
 
 class imdb(object):
+    """Image database."""
+
     def __init__(self, name):
         self._name = name
         self._num_classes = 0
@@ -114,9 +116,8 @@ class imdb(object):
             boxes = candidate_boxes[i]
             if boxes.shape[0] == 0:
                 continue
-            overlaps = \
-                    utils.cython_bbox.bbox_overlaps(boxes.astype(np.float),
-                                                    gt_boxes.astype(np.float))
+            overlaps = bbox_overlaps(boxes.astype(np.float),
+                                     gt_boxes.astype(np.float))
 
             # gt_overlaps = np.hstack((gt_overlaps, overlaps.max(axis=0)))
             _gt_overlaps = np.zeros((gt_boxes.shape[0]))
@@ -157,9 +158,8 @@ class imdb(object):
             if gt_roidb is not None:
                 gt_boxes = gt_roidb[i]['boxes']
                 gt_classes = gt_roidb[i]['gt_classes']
-                gt_overlaps = \
-                        utils.cython_bbox.bbox_overlaps(boxes.astype(np.float),
-                                                        gt_boxes.astype(np.float))
+                gt_overlaps = bbox_overlaps(boxes.astype(np.float),
+                                            gt_boxes.astype(np.float))
                 argmaxes = gt_overlaps.argmax(axis=1)
                 maxes = gt_overlaps.max(axis=1)
                 I = np.where(maxes > 0)[0]

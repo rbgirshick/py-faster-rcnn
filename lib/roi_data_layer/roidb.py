@@ -5,13 +5,14 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
+"""Transform a roidb into a trainable roidb by adding a bunch of metadata."""
+
 import numpy as np
 from fast_rcnn.config import cfg
 import utils.cython_bbox
 
 def prepare_roidb(imdb):
-    """
-    Enrich the imdb's roidb by adding some derived quantities that
+    """Enrich the imdb's roidb by adding some derived quantities that
     are useful for training. This function precomputes the maximum
     overlap, taken over ground-truth boxes, between each ROI and
     each ground-truth box. The class with maximum overlap is also
@@ -37,6 +38,7 @@ def prepare_roidb(imdb):
         assert all(max_classes[nonzero_inds] != 0)
 
 def add_bbox_regression_targets(roidb):
+    """Add information needed to train bounding-box regressors."""
     assert len(roidb) > 0
     assert 'max_classes' in roidb[0], 'Did you call prepare_roidb first?'
 
@@ -80,6 +82,7 @@ def add_bbox_regression_targets(roidb):
     return means.ravel(), stds.ravel()
 
 def _compute_targets(rois, overlaps, labels):
+    """Compute bounding-box regression targets for an image."""
     # Ensure ROIs are floats
     rois = rois.astype(np.float, copy=False)
 

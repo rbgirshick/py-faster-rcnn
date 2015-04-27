@@ -5,6 +5,11 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
+"""The data layer used during training to train a Fast R-CNN network.
+
+RoIDataLayer implements a Caffe Python layer.
+"""
+
 import caffe
 from fast_rcnn.config import cfg
 from roi_data_layer.minibatch import get_minibatch
@@ -13,13 +18,15 @@ import yaml
 from multiprocessing import Process, queues
 
 class RoIDataLayer(caffe.Layer):
-    """Fast R-CNN data layer."""
+    """Fast R-CNN data layer used for training."""
 
     def _shuffle_roidb_inds(self):
+        """Randomly permute the training roidb."""
         self._perm = np.random.permutation(np.arange(len(self._roidb)))
         self._cur = 0
 
     def _get_next_minibatch_inds(self):
+        """Return the roidb indices for the next minibatch."""
         if self._cur + cfg.TRAIN.IMS_PER_BATCH >= len(self._roidb):
             self._shuffle_roidb_inds()
 
@@ -29,10 +36,17 @@ class RoIDataLayer(caffe.Layer):
 
     @staticmethod
     def _prefetch(minibatch_db, num_classes, output_queue):
+        """Prefetch minibatch blobs (if enabled cfg.TRAIN.USE_PREFETCH)."""
         blobs = get_minibatch(minibatch_db, num_classes)
         output_queue.put(blobs)
 
     def _get_next_minibatch(self):
+        """Return the blobs to be used for the next minibatch.
+
+        If cfg.TRAIN.USE_PREFETCH is True, then blobs will be computed in a
+        separate process and made available through the self._prefetch_queue
+        queue.
+        """
         db_inds = self._get_next_minibatch_inds()
         minibatch_db = [self._roidb[i] for i in db_inds]
         if cfg.TRAIN.USE_PREFETCH:
@@ -45,12 +59,14 @@ class RoIDataLayer(caffe.Layer):
             return get_minibatch(minibatch_db, self._num_classes)
 
     def set_roidb(self, roidb):
+        """Set the roidb to be used by this layer during training."""
         self._roidb = roidb
         self._shuffle_roidb_inds()
         if cfg.TRAIN.USE_PREFETCH:
             self._get_next_minibatch()
 
     def setup(self, bottom, top):
+        """Setup the RoIDataLayer."""
         if cfg.TRAIN.USE_PREFETCH:
             self._prefetch_process = None
             self._prefetch_queue = queues.SimpleQueue()
@@ -78,6 +94,7 @@ class RoIDataLayer(caffe.Layer):
         top[4].reshape(1, self._num_classes * 4)
 
     def forward(self, bottom, top):
+        """Get blobs and copy them into this layer's top blob vector."""
         if cfg.TRAIN.USE_PREFETCH:
             blobs = self._prefetch_queue.get()
             self._get_next_minibatch()
