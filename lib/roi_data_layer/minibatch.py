@@ -8,17 +8,14 @@
 import numpy as np
 import numpy.random as npr
 import cv2
-import matplotlib.pyplot as plt
 from fast_rcnn.config import cfg
 from utils.blob import prep_im_for_blob, im_list_to_blob
 
-def get_minibatch(roidb):
+def get_minibatch(roidb, num_classes):
     """
     Given a roidb, construct a minibatch sampled from it.
     """
     num_images = len(roidb)
-    # Infer number of classes from the number of columns in gt_overlaps
-    num_classes = roidb[0]['gt_overlaps'].shape[1]
     # Sample random scales to use for each image in this batch
     random_scale_inds = npr.randint(0, high=len(cfg.TRAIN.SCALES),
                                     size=num_images)
@@ -39,7 +36,8 @@ def get_minibatch(roidb):
     # all_overlaps = []
     for im_i in xrange(num_images):
         labels, overlaps, im_rois, bbox_targets, bbox_loss \
-            = _sample_rois(roidb[im_i], fg_rois_per_image, rois_per_image)
+            = _sample_rois(roidb[im_i], fg_rois_per_image, rois_per_image,
+                           num_classes)
 
         # Add to RoIs blob
         rois = _scale_im_rois(im_rois, im_scales[im_i])
@@ -66,7 +64,7 @@ def get_minibatch(roidb):
 
     return blobs
 
-def _sample_rois(roidb, fg_rois_per_image, rois_per_image):
+def _sample_rois(roidb, fg_rois_per_image, rois_per_image, num_classes):
     """
     Generate a random sample of RoIs comprising foreground and background
     examples.
@@ -108,8 +106,6 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image):
     overlaps = overlaps[keep_inds]
     rois = rois[keep_inds]
 
-    # Infer number of classes from the number of columns in gt_overlaps
-    num_classes = roidb['gt_overlaps'].shape[1]
     bbox_targets, bbox_loss_weights = \
             _get_bbox_regression_labels(roidb['bbox_targets'][keep_inds, :],
                                         num_classes)
@@ -167,6 +163,7 @@ def _get_bbox_regression_labels(bbox_target_data, num_classes):
 
 def _vis_minibatch(im_blob, rois_blob, labels_blob, overlaps):
     """Visualize a mini-batch for debugging."""
+    import matplotlib.pyplot as plt
     for i in xrange(rois_blob.shape[0]):
         rois = rois_blob[i, :]
         im_ind = rois[0]

@@ -13,7 +13,7 @@
 # and use cfg_from_file(yaml_file) to load it and override the default options.
 #
 # - See tools/{train,test}_net.py for example code that uses cfg_from_file().
-# - See examples/multiscale.yml for an example YAML config override file.
+# - See experiments/cfgs/*.yml for example YAML config override files.
 #
 
 import os
@@ -125,7 +125,7 @@ __C.ROOT_DIR = osp.abspath(osp.join(osp.dirname(__file__), '..', '..'))
 # Place outputs under an experiments directory
 __C.EXP_DIR = 'default'
 
-def get_output_path(imdb, net):
+def get_output_dir(imdb, net):
     path = osp.abspath(osp.join(__C.ROOT_DIR, 'output', __C.EXP_DIR, imdb.name))
     if net is None:
         return path

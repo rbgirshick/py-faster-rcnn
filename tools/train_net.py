@@ -8,8 +8,8 @@
 # --------------------------------------------------------
 
 import _init_paths
-import fast_rcnn as frc
-from fast_rcnn.config import cfg, cfg_from_file
+from fast_rcnn.train import get_training_roidb, train_net
+from fast_rcnn.config import cfg, cfg_from_file, get_output_dir
 from datasets.factory import get_imdb
 import caffe
 import argparse
@@ -67,7 +67,11 @@ if __name__ == '__main__':
 
     imdb_train = get_imdb(args.imdb_name)
     print 'Loaded dataset `{:s}` for training'.format(imdb_train.name)
+    roidb = get_training_roidb(imdb_train)
 
-    frc.train.train_net(args.solver, imdb_train,
-                        pretrained_model=args.pretrained_model,
-                        max_iters=args.max_iters)
+    output_dir = get_output_dir(imdb_train, None)
+    print 'Output will be saved to `{:s}`'.format(output_dir)
+
+    train_net(args.solver, roidb, output_dir,
+              pretrained_model=args.pretrained_model,
+              max_iters=args.max_iters)
