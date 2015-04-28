@@ -71,6 +71,7 @@ class RoIDataLayer(caffe.Layer):
             self._prefetch_process = None
             self._prefetch_queue = queues.SimpleQueue()
 
+        # parse the layer parameter string, which must be valid YAML
         layer_params = yaml.load(self.param_str_)
 
         self._num_classes = layer_params['num_classes']
@@ -82,15 +83,25 @@ class RoIDataLayer(caffe.Layer):
             'bbox_targets': 3,
             'bbox_loss_weights': 4}
 
-        # data
-        top[0].reshape(1, 3, 1, 1)
-        # rois
+        # data blob: holds a batch of N images, each with 3 channels
+        # The height and width (100 x 100) are dummy values
+        top[0].reshape(1, 3, 100, 100)
+
+        # rois blob: holds R regions of interest, each is a 5-tuple
+        # (n, x1, y1, x2, y2) specifying an image batch index n and a
+        # rectangle (x1, y1, x2, y2)
         top[1].reshape(1, 5)
-        # labels
+
+        # labels blob: R categorical labels in [0, ..., K] for K foreground
+        # classes plus background
         top[2].reshape(1)
-        # bbox_targets
+
+        # bbox_targets blob: R bounding-box regression targets with 4 targets
+        # per class
         top[3].reshape(1, self._num_classes * 4)
-        # bbox_loss_weights
+
+        # bbox_loss_weights blob: At most 4 targets per roi are active; this
+        # binary vector sepcifies the subset of active targets
         top[4].reshape(1, self._num_classes * 4)
 
     def forward(self, bottom, top):
