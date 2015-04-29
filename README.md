@@ -4,15 +4,17 @@ Created by Ross Girshick at Microsoft Research, Redmond.
 
 ### Introduction
 
-*Fast R-CNN* is a clean and fast framework for object detection.
-Compared to traditional R-CNN, and its accelerated version SPPnet, Fast R-CNN trains networks using a multi-task loss in a single fine-tuning run.
-The multi-task loss simplifies and speeds up training.
-Unlike SPPnet, all network layers can be learned during fine-tuning.
-We show that this difference has practical ramifications for very deep networks,  such as VGG16, where mAP suffers when only the fully-connected layers are   fine-tuned.
-Compared to "slow" R-CNN, Fast R-CNN is 9x faster at training VGG16 for detection, 213x faster for detection, and achieves a significantly higher mAP on PASCAL VOC 2012.
-Compared to SPPnet, Fast R-CNN trains VGG16 3x faster, tests 10x faster, and is more accurate.
+**Fast R-CNN** is a fast framework for object detection with deep ConvNets. Fast R-CNN is
+ - written in Python and C++/Caffe,
+ - trains state-of-the-art models, like VGG16, 9x faster than traditional R-CNN and 3x faster than SPPnet,
+ - runs 200x faster than R-CNN and 10x faster than SPPnet at test-time,
+ - and has a significantly higher mAP on PASCAL VOC than both R-CNN and SPPnet.
 
 Fast R-CNN was initially described in an [arXiv tech report](http://arxiv.org/abs/todo).
+
+### License
+
+Fast R-CNN is released under the MIT License (refer to the LICENSE file for details).
 
 ### Citing Fast R-CNN
 
@@ -24,10 +26,6 @@ If you find R-CNN useful in your research, please consider citing:
         Journal = {arXiv preprint arXiv:todo},
         Year = {2015}
     }
-
-### License
-
-Fast R-CNN is released under the MIT License (refer to the LICENSE file for details).
 
 ### Installation requirements
 
@@ -76,7 +74,7 @@ To run the demo
 cd $FRCN_ROOT
 ./tools/demo.py
 ```
-The demo performs detection using a VGG16 network trained for detection on PASCAL VOC 2012. The object proposals are pre-computed in order to reduce installation requirements.
+The demo performs detection using a VGG16 network trained for detection on PASCAL VOC 2007. The object proposals are pre-computed in order to reduce installation requirements.
 
 ### Beyond the demo: installation for training and testing models
 1. Download the training, validation, test data and VOCdevkit
@@ -104,23 +102,15 @@ The demo performs detection using a VGG16 network trained for detection on PASCA
   	# ... and several other directories ...
   	```
   	
-4. Establish symlinks for the PASCAL VOC dataset
+4. Create symlinks for the PASCAL VOC dataset
 
 	```Shell
     cd $FRCN_ROOT/data
     ln -s $VOCdevkit VOCdevkit2007
     ```
-    
-5. Establish a symlink for your cache directory
-
-	```Shell
-    cd $FRCN_ROOT/data
-    # /your/cache/path needs to be a directory that will hold a few GB of data
-    ln -s /your/cache/path cache
-    ```
-    
-6. [Optional] follow similar steps to get PASCAL VOC 2010 and 2012
-7. Follow the next sections to download pre-computed object proposals and pre-trained ImageNet models
+    Using symlinks is a good idea because you will likely want to share the same PASCAL dataset installation between multiple projects.
+5. [Optional] follow similar steps to get PASCAL VOC 2010 and 2012
+6. Follow the next sections to download pre-computed object proposals and pre-trained ImageNet models
 
 ### Download pre-computed Selective Search object proposals
 
@@ -151,6 +141,14 @@ These models are all available in the [Caffe Model Zoo](https://github.com/BVLC/
 ./tools/train_net.py --gpu 0 --solver models/VGG16/solver.prototxt \
 	--weights data/imagenet_models/VGG16.v2.caffemodel
 ```
+
+If you see this error
+
+```
+EnvironmentError: MATLAB command 'matlab' not found. Please add 'matlab' to your PATH.
+```
+
+then you need to make sure the `matlab` binary is in your `$PATH`. MATLAB is currently required for PASCAL VOC evaluation.
 
 **Test** a Fast R-CNN detector. For example, test the VGG 16 network on VOC 2007 test:
 
