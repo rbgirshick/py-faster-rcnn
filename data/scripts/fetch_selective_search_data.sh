@@ -1,11 +1,11 @@
 #!/bin/bash
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../data" && pwd )"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"
 cd $DIR
 
 FILE=selective_search_data.tgz
-URL=https://www.dropbox.com/s/g1z7iolrtxdo56c/selective_search_data.tgz?dl=0
-CHECKSUM=7cc85568609e1ac645f102c37eb376c3
+URL=http://www.cs.berkeley.edu/~rbg/r-cnn-release1-selective-search.tgz
+CHECKSUM=6cf6df219c1e514f64482f11d00bd0b4
 
 if [ -f $FILE ]; then
   echo "File already exists. Checking md5..."

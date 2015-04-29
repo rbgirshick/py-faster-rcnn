@@ -1,13 +1,11 @@
 #!/bin/bash
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../data" && pwd )"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"
 cd $DIR
 
 FILE=fast_rcnn_models.tgz
-# TODO
-URL=
-# TODO
-CHECKSUM=
+URL=http://www.cs.berkeley.edu/~rbg/fast-rcnn-data/fast_rcnn_models.tgz
+CHECKSUM=5f7dde9f5376e18c8e065338cc5df3f7
 
 if [ -f $FILE ]; then
   echo "File already exists. Checking md5..."
@@ -25,8 +23,7 @@ if [ -f $FILE ]; then
   fi
 fi
 
-# TODO
-echo "Downloading precomputed selective search boxes (1.8G)..."
+echo "Downloading Fast R-CNN demo models (0.96G)..."
 
 wget $URL -O $FILE
 

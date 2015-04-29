@@ -1,11 +1,11 @@
 #!/bin/bash
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../data" && pwd )"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"
 cd $DIR
 
 FILE=imagenet_models.tgz
-URL=https://www.dropbox.com/s/22it3se7e4zi2mi/imagenet_models.tgz?dl=0
-CHECKSUM=66dbfdf04297e1e68b49f168a2ccc59d
+URL=http://www.cs.berkeley.edu/~rbg/fast-rcnn-data/imagenet_models.tgz
+CHECKSUM=8b1d4b9da0593fc70ef403284f810adc
 
 if [ -f $FILE ]; then
   echo "File already exists. Checking md5..."
