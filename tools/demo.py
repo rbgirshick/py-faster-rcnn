@@ -39,7 +39,7 @@ def vis_detections(im, class_name, dets, thresh=0.5):
         return
 
     im = im[:, :, (2, 1, 0)]
-    fig, ax = plt.subplots(figsize=(14, 14))
+    fig, ax = plt.subplots(figsize=(12, 12))
     ax.imshow(im, aspect='equal')
     for i in inds:
         bbox = dets[i, :4]
@@ -56,12 +56,13 @@ def vis_detections(im, class_name, dets, thresh=0.5):
                 bbox=dict(facecolor='blue', alpha=0.5),
                 fontsize=14, color='white')
 
-    ax.set_title(('All {} detections with '
-                  'score >= {:.1f}').format(class_name, thresh),
-                  fontsize=18)
+    ax.set_title(('{} detections with '
+                  'p({} | box) >= {:.1f}').format(class_name, class_name,
+                                                  thresh),
+                  fontsize=14)
     plt.axis('off')
     plt.tight_layout()
-    plt.show()
+    plt.draw()
 
 def demo(net, image_name, classes):
     """Detect object classes in an image using pre-computed object proposals."""
@@ -95,8 +96,8 @@ def demo(net, image_name, classes):
                           cls_scores[:, np.newaxis])).astype(np.float32)
         keep = nms(dets, NMS_THRESH)
         dets = dets[keep, :]
-        print 'All {} detections with score >= {:.1f}'.format(cls, CONF_THRESH)
-        print 'Close image window (ctrl-w) to continue'
+        print 'All {} detections with p({} | box) >= {:.1f}'.format(cls, cls,
+                                                                    CONF_THRESH)
         vis_detections(im, cls, dets, thresh=CONF_THRESH)
 
 def parse_args():
@@ -141,3 +142,5 @@ if __name__ == '__main__':
     print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
     print 'Demo for data/demo/001551.jpg'
     demo(net, '001551', ('sofa', 'tvmonitor'))
+
+    plt.show()
