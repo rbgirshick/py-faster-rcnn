@@ -1,29 +1,17 @@
 name: "CaffeNet"
-input: "data"
-input_shape {
-  dim: 1
-  dim: 3
-  dim: 227
-  dim: 227
-}
-input: "rois"
-input_shape {
-  dim: 1 # to be changed on-the-fly to num ROIs
-  dim: 5 # [batch ind, x1, y1, x2, y2] zero-based indexing
-}
-input: "labels"
-input_shape {
-  dim: 1 # to be changed on-the-fly to match num ROIs
-}
-input: "bbox_targets"
-input_shape {
-  dim: 1  # to be changed on-the-fly to match num ROIs
-  dim: 84 # 4 * K (=21) classes
-}
-input: "bbox_loss_weights"
-input_shape {
-  dim: 1  # to be changed on-the-fly to match num ROIs
-  dim: 84 # 4 * K (=21) classes
+layer {
+  name: 'data'
+  type: 'Python'
+  top: 'data'
+  top: 'rois'
+  top: 'labels'
+  top: 'bbox_targets'
+  top: 'bbox_loss_weights'
+  python_param {
+    module: 'roi_data_layer.layer'
+    layer: 'RoIDataLayer'
+    param_str: "'num_classes': 21"
+  }
 }
 layer {
   name: "conv1"

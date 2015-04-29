@@ -1,12 +1,12 @@
-#! /bin/bash
+#!/bin/bash
 
 set -x
+set -e
 
 export PYTHONUNBUFFERED="True"
 
-# -----------------------------------------------------------------------------
 LOG="experiments/logs/piecewise_caffenet.txt.`date +'%Y-%m-%d_%H-%M-%S'`"
-exec 3>&1 4>&2 &> >(tee -a "$LOG")
+exec &> >(tee -a "$LOG")
 echo Logging output to "$LOG"
 
 time ./tools/train_net.py --gpu $1 \
@@ -20,7 +20,3 @@ time ./tools/test_net.py --gpu $1 \
   --net output/piecewise/voc_2007_trainval/caffenet_fast_rcnn_piecewise_iter_40000.caffemodel \
   --imdb voc_2007_test \
   --cfg experiments/cfgs/piecewise.yml
-
-# restore stdout/err
-exec 1>&3 2>&4
-# -----------------------------------------------------------------------------
