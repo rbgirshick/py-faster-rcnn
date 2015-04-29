@@ -13,7 +13,7 @@ from utils.timer import Timer
 import numpy as np
 import cv2
 import caffe
-import utils.cython_nms
+from utils.cython_nms import nms
 import cPickle
 import heapq
 from utils.blob import im_list_to_blob
@@ -207,7 +207,7 @@ def im_detect(net, im, boxes):
 
     return scores, pred_boxes
 
-def _vis_detections(im, class_name, dets, thresh=0.3):
+def vis_detections(im, class_name, dets, thresh=0.3):
     """Visual debugging of detections."""
     import matplotlib.pyplot as plt
     im = im[:, :, (2, 1, 0)]
@@ -224,7 +224,7 @@ def _vis_detections(im, class_name, dets, thresh=0.3):
                               edgecolor='g', linewidth=3)
                 )
             plt.title('{}  {:.3f}'.format(class_name, score))
-            plt.pause(1)
+            plt.show()
 
 def apply_nms(all_boxes, thresh):
     """Apply non-maximum suppression to all predicted boxes output by the
@@ -239,7 +239,7 @@ def apply_nms(all_boxes, thresh):
             dets = all_boxes[cls_ind][im_ind]
             if dets == []:
                 continue
-            keep = utils.cython_nms.nms(dets, thresh)
+            keep = nms(dets, thresh)
             if len(keep) == 0:
                 continue
             nms_boxes[cls_ind][im_ind] = dets[keep, :].copy()
@@ -303,8 +303,8 @@ def test_net(net, imdb):
                     .astype(np.float32, copy=False)
 
             if 0:
-                keep = utils.cython_nms.nms(all_boxes[j][i], 0.3)
-                _vis_detections(im, imdb.classes[j], all_boxes[j][i][keep, :])
+                keep = nms(all_boxes[j][i], 0.3)
+                vis_detections(im, imdb.classes[j], all_boxes[j][i][keep, :])
         _t['misc'].toc()
 
         print 'im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
