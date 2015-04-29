@@ -6,6 +6,7 @@
 # --------------------------------------------------------
 
 import os
+import os.path as osp
 import PIL
 from utils.cython_bbox import bbox_overlaps
 import numpy as np
@@ -64,7 +65,10 @@ class imdb(object):
 
     @property
     def cache_path(self):
-        return os.path.join(datasets.ROOT_DIR, 'data', 'cache')
+        cache_path = osp.abspath(osp.join(datasets.ROOT_DIR, 'data', 'cache'))
+        if not os.path.exists(cache_path):
+            os.makedirs(cache_path)
+        return cache_path
 
     @property
     def num_images(self):
