@@ -20,7 +20,8 @@ from utils.cython_nms import nms
 from utils.timer import Timer
 import matplotlib.pyplot as plt
 import numpy as np
-import caffe, cPickle, os, sys, cv2
+import scipy.io as sio
+import caffe, os, sys, cv2
 import argparse
 
 CLASSES = ('__background__',
@@ -75,9 +76,8 @@ def demo(net, image_name, classes):
 
     # Load pre-computed Selected Search object proposals
     box_file = os.path.join(cfg.ROOT_DIR, 'data', 'demo',
-                            image_name + '_boxes.pkl')
-    with open(box_file, 'rb') as f:
-        obj_proposals = cPickle.load(f)
+                            image_name + '_boxes.mat')
+    obj_proposals = sio.loadmat(box_file)['boxes']
 
     # Load the demo image
     im_file = os.path.join(cfg.ROOT_DIR, 'data', 'demo', image_name + '.jpg')
