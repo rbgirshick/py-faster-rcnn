@@ -27,11 +27,16 @@ If you find R-CNN useful in your research, please consider citing:
         Year = {2015}
     }
 
-### Installation requirements
+### Requirements: software
 
-1. Requirements for Caffe and pycaffe (see: [Caffe installation instructions](http://caffe.berkeleyvision.org/installation.html))
-2. Additional Python packages: cython, python-opencv, easydict
+1. Requirements for `Caffe` and `pycaffe` (see: [Caffe installation instructions](http://caffe.berkeleyvision.org/installation.html))
+2. Python packages you might not have: `cython`, `python-opencv`, `easydict`
 3. [optional] MATLAB (required for PASCAL VOC evaluation only)
+
+### Requirements: hardware
+
+1. For training smaller networks (CaffeNet, VGG_CNN_M_1024) a good GPU (e.g., Titan, K20, K40, ...) with at least 3G of memory suffices
+2. For training with VGG16, you'll need a K40 (~11G of memory)
 
 ### Installation (sufficient for the demo)
 

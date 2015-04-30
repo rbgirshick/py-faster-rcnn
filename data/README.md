@@ -1,29 +1,29 @@
-This directory holds:
-- Precomputed object proposals
-- Caffe models pretrained on ImageNet
+This directory holds (*after you download them*):
+- Pre-computed object proposals
+- Caffe models pre-trained on ImageNet
 - Fast R-CNN models
 - Symlinks to datasets
 
-To download precomputed selective search proposals, run:
+To download precomputed Selective Search proposals for PASCAL VOC 2007 and 2012, run:
 
 ```
-./tools/scripts/fetch_selective_search_data.sh
+./data/scripts/fetch_selective_search_data.sh
 ```
 
 This script will populate `data/selective_search_data`.
 
-To download Caffe models pretrained on ImageNet, run:
+To download Caffe models (CaffeNet, VGG_CNN_M_1024, VGG16) pre-trained on ImageNet, run:
 
 ```
-./tools/scripts/fetch_imagenet_models.sh
+./data/scripts/fetch_imagenet_models.sh
 ```
 
 This script will populate `data/imagenet_models`.
 
-To download Fast R-CNN models, run:
+To download Fast R-CNN models trained on VOC 2007, run:
 
 ```
-./tools/scripts/fetch_fast_rcnn_models.sh
+./data/scripts/fetch_fast_rcnn_models.sh
 ```
 
 This script will populate `data/fast_rcnn_models`.
