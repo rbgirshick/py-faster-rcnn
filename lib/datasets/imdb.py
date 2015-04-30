@@ -187,3 +187,7 @@ class imdb(object):
             a[i]['gt_overlaps'] = scipy.sparse.vstack([a[i]['gt_overlaps'],
                                                        b[i]['gt_overlaps']])
         return a
+
+    def competition_mode(self, on):
+        """Turn competition mode on or off."""
+        pass

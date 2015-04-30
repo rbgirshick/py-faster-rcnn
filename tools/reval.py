@@ -14,13 +14,39 @@ from fast_rcnn.test import apply_nms
 from fast_rcnn.config import cfg
 from datasets.factory import get_imdb
 import cPickle
-import os, sys
+import os, sys, argparse
 import numpy as np
+
+def parse_args():
+    """
+    Parse input arguments
+    """
+    parser = argparse.ArgumentParser(description='Re-evaluate results')
+    parser.add_argument('output_dir', nargs=1, help='results directory',
+                        type=str)
+    parser.add_argument('--rerun', dest='rerun',
+                        help=('re-run evaluation code '
+                              '(otherwise: results are loaded from file)'),
+                        action='store_true')
+    parser.add_argument('--imdb', dest='imdb_name',
+                        help='dataset to re-evaluate',
+                        default='voc_2007_test', type=str)
+    parser.add_argument('--comp', dest='comp_mode', help='competition mode',
+                        action='store_true')
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(1)
+
+    args = parser.parse_args()
+    return args
+
 
 def from_mats(imdb_name, output_dir):
     import scipy.io as sio
 
     imdb = get_imdb(imdb_name)
+
     aps = []
     for i, cls in enumerate(imdb.classes[1:]):
         mat = sio.loadmat(os.path.join(output_dir, cls + '_pr.mat'))
@@ -37,10 +63,9 @@ def from_mats(imdb_name, output_dir):
     print '~~~~~~~~~~~~~~~~~~~'
 
 
-def from_dets(imdb_name, output_dir):
+def from_dets(imdb_name, output_dir, comp_mode):
     imdb = get_imdb(imdb_name)
-    imdb.config['use_salt'] = False
-    imdb.config['cleanup'] = False
+    imdb.competition_mode(comp_mode)
     with open(os.path.join(output_dir, 'detections.pkl'), 'rb') as f:
         dets = cPickle.load(f)
 
@@ -51,13 +76,15 @@ def from_dets(imdb_name, output_dir):
     imdb.evaluate_detections(nms_dets, output_dir)
 
 if __name__ == '__main__':
-    # 'output/top_1000/voc_2007_test/vgg_cnn_m_1024_fast_rcnn_iter_40000'
-    output_dir = sys.argv[1]
-    output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                 '..', output_dir))
-    imdb_name = 'voc_2007_test'
+    args = parse_args()
 
-    if len(sys.argv) > 2:
-        from_mats(imdb_name, output_dir)
+    output_dir = os.path.abspath(args.output_dir[0])
+    imdb_name = args.imdb_name
+
+    if args.comp_mode and not args.rerun:
+        raise ValueError('--rerun must be used with --comp')
+
+    if args.rerun:
+        from_dets(imdb_name, output_dir, args.comp_mode)
     else:
-        from_dets(imdb_name, output_dir)
+        from_mats(imdb_name, output_dir)

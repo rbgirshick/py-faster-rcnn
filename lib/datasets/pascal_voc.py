@@ -273,6 +273,14 @@ class pascal_voc(datasets.imdb):
         comp_id = self._write_voc_results_file(all_boxes)
         self._do_matlab_eval(comp_id, output_dir)
 
+    def competition_mode(self, on):
+        if on:
+            self.config['use_salt'] = False
+            self.config['cleanup'] = False
+        else:
+            self.config['use_salt'] = True
+            self.config['cleanup'] = True
+
 if __name__ == '__main__':
     d = datasets.pascal_voc('trainval', '2007')
     res = d.roidb
