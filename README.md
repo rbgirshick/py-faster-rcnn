@@ -26,6 +26,14 @@ If you find R-CNN useful in your research, please consider citing:
         Journal = {arXiv preprint arXiv:todo},
         Year = {2015}
     }
+    
+### Contents
+1. [Requirements: software](#requirements-software)
+2. [Requirements: hardware](#requirements-hardware)
+3. [Basic installation](#installation-sufficient-for-the-demo)
+4. [Demo](#demo)
+5. [Beyond the demo: training and testing](#beyond-the-demo-installation-for-training-and-testing-models)
+6. [Usage](#usage)
 
 ### Requirements: software
 
@@ -83,12 +91,32 @@ If you find R-CNN useful in your research, please consider citing:
 
 ### Demo
 
+*After successfully completing [basic installation](#installation-sufficient-for-the-demo)*, you'll be ready to run the demo.
+
+**Python**
+
 To run the demo
 ```Shell
 cd $FRCN_ROOT
 ./tools/demo.py
 ```
 The demo performs detection using a VGG16 network trained for detection on PASCAL VOC 2007. The object proposals are pre-computed in order to reduce installation requirements.
+
+**Note:** If the demo crashes Caffe because your GPU doesn't have enough memory, try running the demo with a small network, e.g., `./tools/demo.py --net caffenet` or with `--net vgg_cnn_m_1024`. Or run in CPU mode `./tools/demo.py --cpu`. Type `./tools/demo.py -h` for usage.
+
+**MATLAB**
+
+There's also a *basic* MATLAB demo, though it's missing some minor bells and whistles compared to the Python version.
+```Shell
+cd $FRCN_ROOT/matlab
+matlab # wait for matlab to start...
+
+# At the matlab prompt, run the script:
+>> fast_rcnn_demo
+```
+
+Fast R-CNN training is implemented in Python only, but test-time detection functionality also exists in MATLAB.
+See `matlab/fast_rcnn_demo.m` and `matlab/fast_rcnn_im_detect.m` for details.
 
 ### Beyond the demo: installation for training and testing models
 1. Download the training, validation, test data and VOCdevkit
