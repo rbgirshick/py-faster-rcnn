@@ -1,5 +1,14 @@
 #!/usr/bin/env python
 
+# --------------------------------------------------------
+# Fast R-CNN
+# Copyright (c) 2015 Microsoft
+# Licensed under The MIT License [see LICENSE for details]
+# Written by Ross Girshick
+# --------------------------------------------------------
+
+"""Reval = re-eval. Re-evaluate saved detections."""
+
 import _init_paths
 from fast_rcnn.test import apply_nms
 from fast_rcnn.config import cfg

@@ -7,6 +7,8 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
+"""Test a Fast R-CNN network on an image database."""
+
 import _init_paths
 from fast_rcnn.test import test_net
 from fast_rcnn.config import cfg, cfg_from_file

@@ -7,6 +7,11 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
+"""
+Train post-hoc SVMs using the algorithm and hyper-parameters from
+traditional R-CNN.
+"""
+
 import _init_paths
 from fast_rcnn.config import cfg, cfg_from_file
 from datasets.factory import get_imdb

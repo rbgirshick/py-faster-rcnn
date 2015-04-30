@@ -7,6 +7,8 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
+"""Compress a Fast R-CNN network using truncated SVD."""
+
 import _init_paths
 import caffe
 import argparse
@@ -14,9 +16,7 @@ import numpy as np
 import os, sys
 
 def parse_args():
-    """
-    Parse input arguments
-    """
+    """Parse input arguments."""
     parser = argparse.ArgumentParser(description='Compress a Fast R-CNN network')
     parser.add_argument('--def', dest='prototxt',
                         help='prototxt file defining the uncompressed network',
@@ -36,8 +36,7 @@ def parse_args():
     return args
 
 def compress_weights(W, l):
-    """
-    Compress the weight matrix W of an inner product (fully connected) layer
+    """Compress the weight matrix W of an inner product (fully connected) layer
     using truncated SVD.
 
     Parameters:
