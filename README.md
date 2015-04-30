@@ -30,6 +30,12 @@ If you find R-CNN useful in your research, please consider citing:
 ### Requirements: software
 
 1. Requirements for `Caffe` and `pycaffe` (see: [Caffe installation instructions](http://caffe.berkeleyvision.org/installation.html))
+  **Note:** Caffe must be built with support for Python layers
+  ```make
+  # In your Makefile.config, make sure to have this line uncommented
+  WITH_PYTHON_LAYER := 1
+  ```
+  You can download my [Makefile.config](http://www.cs.berkeley.edu/~rbg/fast-rcnn-data/Makefile.config) for reference.
 2. Python packages you might not have: `cython`, `python-opencv`, `easydict`
 3. [optional] MATLAB (required for PASCAL VOC evaluation only)
 
