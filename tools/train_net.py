@@ -24,9 +24,11 @@ def parse_args():
     Parse input arguments
     """
     parser = argparse.ArgumentParser(description='Train a Fast R-CNN network')
-    parser.add_argument('--gpu', dest='gpu_id', help='GPU device id to use [0]',
+    parser.add_argument('--gpu', dest='gpu_id',
+                        help='GPU device id to use [0]',
                         default=0, type=int)
-    parser.add_argument('--solver', dest='solver', help='solver prototxt',
+    parser.add_argument('--solver', dest='solver',
+                        help='solver prototxt',
                         default=None, type=str)
     parser.add_argument('--iters', dest='max_iters',
                         help='number of iterations to train',
@@ -35,10 +37,14 @@ def parse_args():
                         help='initialize with pretrained model weights',
                         default=None, type=str)
     parser.add_argument('--cfg', dest='cfg_file',
-                        help='optional config file', default=None, type=str)
+                        help='optional config file',
+                        default=None, type=str)
     parser.add_argument('--imdb', dest='imdb_name',
                         help='dataset to train on',
                         default='voc_2007_trainval', type=str)
+    parser.add_argument('--rand', dest='randomize',
+                        help='randomize (do not use a fixed seed)',
+                        action='store_true')
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -59,8 +65,10 @@ if __name__ == '__main__':
     print('Using config:')
     pprint.pprint(cfg)
 
-    # fix the random seed for reproducibility
-    np.random.seed(cfg.RNG_SEED)
+    if not args.randomize:
+        # fix the random seeds (numpy and caffe) for reproducibility
+        np.random.seed(cfg.RNG_SEED)
+        caffe.set_random_seed(cfg.RNG_SEED)
 
     # set up caffe
     caffe.set_mode_gpu()

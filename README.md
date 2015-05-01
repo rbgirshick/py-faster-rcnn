@@ -225,6 +225,9 @@ Test output is written underneath `$FRCN_ROOT/output`.
 ### Experiment scripts
 Scripts to reproduce the experiments in the paper (*up to stochastic variation*) are provided in `$FRCN_ROOT/experiments/scripts`. Log files for experiments are located in `experiments/logs`.
 
+**Note:** Until recently (commit a566e39), the RNG seed for Caffe was not fixed during training. Now it's fixed, unless `train_net.py` is called with the `--rand` flag.
+Results generated before this commit will have some stochastic variation.
+
 ### Extra downloads
 
 - [Experiment logs](http://www.cs.berkeley.edu/~rbg/fast-rcnn-data/fast_rcnn_experiments.tgz)
