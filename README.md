@@ -10,7 +10,7 @@ Created by Ross Girshick at Microsoft Research, Redmond.
  - runs 200x faster than R-CNN and 10x faster than SPPnet at test-time,
  - and has a significantly higher mAP on PASCAL VOC than both R-CNN and SPPnet.
 
-Fast R-CNN was initially described in an [arXiv tech report](http://arxiv.org/abs/todo).
+Fast R-CNN was initially described in an [arXiv tech report](http://arxiv.org/abs/1504.08083).
 
 ### License
 
@@ -23,7 +23,7 @@ If you find R-CNN useful in your research, please consider citing:
     @article{girshick15fastrcnn,
         Author = {Ross Girshick},
         Title = {Fast R-CNN},
-        Journal = {arXiv preprint arXiv:todo},
+        Journal = {arXiv preprint arXiv:1504.08083},
         Year = {2015}
     }
     
