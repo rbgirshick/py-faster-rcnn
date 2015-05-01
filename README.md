@@ -4,11 +4,11 @@ Created by Ross Girshick at Microsoft Research, Redmond.
 
 ### Introduction
 
-**Fast R-CNN** is a fast framework for object detection with deep ConvNets. Fast R-CNN is
- - written in Python and C++/Caffe,
+**Fast R-CNN** is a fast framework for object detection with deep ConvNets. Fast R-CNN
  - trains state-of-the-art models, like VGG16, 9x faster than traditional R-CNN and 3x faster than SPPnet,
  - runs 200x faster than R-CNN and 10x faster than SPPnet at test-time,
- - and has a significantly higher mAP on PASCAL VOC than both R-CNN and SPPnet.
+ - has a significantly higher mAP on PASCAL VOC than both R-CNN and SPPnet,
+ - and is written in Python and C++/Caffe.
 
 Fast R-CNN was initially described in an [arXiv tech report](http://arxiv.org/abs/1504.08083).
 
@@ -18,7 +18,7 @@ Fast R-CNN is released under the MIT License (refer to the LICENSE file for deta
 
 ### Citing Fast R-CNN
 
-If you find R-CNN useful in your research, please consider citing:
+If you find Fast R-CNN useful in your research, please consider citing:
 
     @article{girshick15fastrcnn,
         Author = {Ross Girshick},
@@ -37,7 +37,7 @@ If you find R-CNN useful in your research, please consider citing:
 
 ### Requirements: software
 
-1. Requirements for `Caffe` and `pycaffe` (see: [Caffe installation instructions](http://caffe.berkeleyvision.org/installation.html)
+1. Requirements for `Caffe` and `pycaffe` (see: [Caffe installation instructions](http://caffe.berkeleyvision.org/installation.html))
 
   **Note:** Caffe *must* be built with support for Python layers!
 
