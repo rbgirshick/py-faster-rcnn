@@ -65,6 +65,15 @@ If you find Fast R-CNN useful in your research, please consider citing:
   ```
   
 2. We'll call the directory that you cloned Fast R-CNN into `FRCN_ROOT`
+
+   *Ignore notes 1 and 2 if you followed step 1 above.*
+   
+   **Note 1:** If you didn't clone Fast R-CNN with the `--recursive` flag, then you'll need to manually clone the `caffe-fast-rcnn` submodule:
+    ```Shell
+    git submodule update --init --recursive
+    ```
+    **Note 2:** The `caffe-fast-rcnn` submodule needs to be on the `fast-rcnn` branch (or equivalent detached state). This will happen automatically *if you follow these instructions*.
+
 3. Build the Cython modules
     ```Shell
     cd $FRCN_ROOT/lib
