@@ -61,7 +61,7 @@ If you find Fast R-CNN useful in your research, please consider citing:
 1. Clone the Fast R-CNN repository
   ```Shell
   # Make sure to clone with --recursive
-  git clone --recursive git@github.com:rbgirshick/fast-rcnn.git
+  git clone --recursive https://github.com/rbgirshick/fast-rcnn.git
   ```
   
 2. We'll call the directory that you cloned Fast R-CNN into `FRCN_ROOT`
