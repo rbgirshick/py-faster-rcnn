@@ -1,4 +1,4 @@
-# *Fast* R-CNN
+# *Fast* R-CNN: Fast Region-based Convolutional Networks for object detection
 
 Created by Ross Girshick at Microsoft Research, Redmond.
 
@@ -127,6 +127,20 @@ matlab # wait for matlab to start...
 
 Fast R-CNN training is implemented in Python only, but test-time detection functionality also exists in MATLAB.
 See `matlab/fast_rcnn_demo.m` and `matlab/fast_rcnn_im_detect.m` for details.
+
+**Computing object proposals**
+
+The demo uses pre-computed selective search proposals computed with [this code](https://github.com/rbgirshick/rcnn/blob/master/selective_search/selective_search_boxes.m).
+If you'd like to compute proposals on your own images, there are many options.
+Here are some pointers; if you run into trouble using these resources please direct questions to the respective authors.
+
+1. Selective Search: [original matlab code](http://disi.unitn.it/~uijlings/MyHomepage/index.php#page=projects1), [python wrapper](https://github.com/sergeyk/selective_search_ijcv_with_python)
+2. EdgeBoxes: [matlab code](https://github.com/pdollar/edges)
+3. GOP and LPO: [python code](http://www.philkr.net/)
+4. MCG: [matlab code](http://www.eecs.berkeley.edu/Research/Projects/CS/vision/grouping/mcg/)
+5. RIGOR: [matlab code](http://cpl.cc.gatech.edu/projects/RIGOR/)
+
+Apologies if I've left your method off this list. Feel free to contact me and ask for it to be included.
 
 ### Beyond the demo: installation for training and testing models
 1. Download the training, validation, test data and VOCdevkit
