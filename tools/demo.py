@@ -137,7 +137,7 @@ if __name__ == '__main__':
         caffe.set_mode_cpu()
     else:
         caffe.set_mode_gpu()
-    caffe.set_device(args.gpu_id)
+        caffe.set_device(args.gpu_id)
     net = caffe.Net(prototxt, caffemodel, caffe.TEST)
 
     print '\n\nLoaded network {:s}'.format(caffemodel)
