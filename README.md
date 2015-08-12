@@ -1,32 +1,42 @@
-# *Fast* R-CNN: Fast Region-based Convolutional Networks for object detection
+### Disclaimer
 
-Created by Ross Girshick at Microsoft Research, Redmond.
+The official Faster R-CNN code (written in MATLAB) is available [here](https://github.com/ShaoqingRen/faster_rcnn).
+If your goal is to reproduce the results in our NIPS 2015 paper, please use the [official code](https://github.com/ShaoqingRen/faster_rcnn).
 
-### Introduction
+This repository contains a Python *reimplementation* of the MATLAB code.
+This Python implementation is built on a fork of [Fast R-CNN](https://github.com/rbgirshick/fast-rcnn).
+There are slight differences between the two implementations.
+In particular, this Python port
+ - is ~10% slower at test-time, because some operations execute on the CPU in Python layers (e.g., 220ms / image vs. 200ms / image for VGG16)
+ - gives similar, but not exactly the same, mAP as the MATLAB version
+ - is *not compatible* with models trained using the MATLAB code due to the minor implementation differences
 
-**Fast R-CNN** is a fast framework for object detection with deep ConvNets. Fast R-CNN
- - trains state-of-the-art models, like VGG16, 9x faster than traditional R-CNN and 3x faster than SPPnet,
- - runs 200x faster than R-CNN and 10x faster than SPPnet at test-time,
- - has a significantly higher mAP on PASCAL VOC than both R-CNN and SPPnet,
- - and is written in Python and C++/Caffe.
+# *Faster* R-CNN: Towards Real-Time Object Detection with Region Proposal Networks
 
-Fast R-CNN was initially described in an [arXiv tech report](http://arxiv.org/abs/1504.08083).
+By Shaoqing Ren, Kaiming He, Ross Girshick, Jian Sun (Microsoft Research)
+
+This Python implementation contains contributions from Sean Bell (Cornell) written during an MSR internship.
+
+Please see the official [README.md](https://github.com/ShaoqingRen/faster_rcnn/blob/master/README.md) for more details.
+
+Faster R-CNN was initially described in an [arXiv tech report](http://arxiv.org/abs/1506.01497) and was subsequently published in NIPS 2015.
 
 ### License
 
-Fast R-CNN is released under the MIT License (refer to the LICENSE file for details).
+Faster R-CNN is released under the MIT License (refer to the LICENSE file for details).
 
-### Citing Fast R-CNN
+### Citing Faster R-CNN
 
-If you find Fast R-CNN useful in your research, please consider citing:
+If you find Faster R-CNN useful in your research, please consider citing:
 
-    @article{girshick15fastrcnn,
-        Author = {Ross Girshick},
-        Title = {Fast R-CNN},
-        Journal = {arXiv preprint arXiv:1504.08083},
+    @inproceedings{renNIPS15fasterrcnn,
+        Author = {Shaoqing Ren and Kaiming He and Ross Girshick and Jian Sun},
+        Title = {Faster {R-CNN}: Towards Real-Time Object Detection
+                 with Region Proposal Networks},
+        Booktitle = {Advances in Neural Information Processing Systems ({NIPS})},
         Year = {2015}
     }
-    
+
 ### Contents
 1. [Requirements: software](#requirements-software)
 2. [Requirements: hardware](#requirements-hardware)
@@ -34,7 +44,6 @@ If you find Fast R-CNN useful in your research, please consider citing:
 4. [Demo](#demo)
 5. [Beyond the demo: training and testing](#beyond-the-demo-installation-for-training-and-testing-models)
 6. [Usage](#usage)
-7. [Extra downloads](#extra-downloads)
 
 ### Requirements: software
 
@@ -53,33 +62,33 @@ If you find Fast R-CNN useful in your research, please consider citing:
 
 ### Requirements: hardware
 
-1. For training smaller networks (CaffeNet, VGG_CNN_M_1024) a good GPU (e.g., Titan, K20, K40, ...) with at least 3G of memory suffices
+1. For training smaller networks (ZF, VGG_CNN_M_1024) a good GPU (e.g., Titan, K20, K40, ...) with at least 3G of memory suffices
 2. For training with VGG16, you'll need a K40 (~11G of memory)
 
 ### Installation (sufficient for the demo)
 
-1. Clone the Fast R-CNN repository
+1. Clone the Faster R-CNN repository
   ```Shell
   # Make sure to clone with --recursive
-  git clone --recursive https://github.com/rbgirshick/fast-rcnn.git
+  git clone --recursive https://github.com/rbgirshick/py-faster-rcnn.git
   ```
-  
-2. We'll call the directory that you cloned Fast R-CNN into `FRCN_ROOT`
+
+2. We'll call the directory that you cloned Faster R-CNN into `FRCN_ROOT`
 
    *Ignore notes 1 and 2 if you followed step 1 above.*
-   
-   **Note 1:** If you didn't clone Fast R-CNN with the `--recursive` flag, then you'll need to manually clone the `caffe-fast-rcnn` submodule:
+
+   **Note 1:** If you didn't clone Faster R-CNN with the `--recursive` flag, then you'll need to manually clone the `caffe-fast-rcnn` submodule:
     ```Shell
     git submodule update --init --recursive
     ```
-    **Note 2:** The `caffe-fast-rcnn` submodule needs to be on the `fast-rcnn` branch (or equivalent detached state). This will happen automatically *if you follow these instructions*.
+    **Note 2:** The `caffe-fast-rcnn` submodule needs to be on the `faster-rcnn` branch (or equivalent detached state). This will happen automatically *if you followed step 1 instructions*.
 
 3. Build the Cython modules
     ```Shell
     cd $FRCN_ROOT/lib
     make
     ```
-    
+
 4. Build Caffe and pycaffe
     ```Shell
     cd $FRCN_ROOT/caffe-fast-rcnn
@@ -90,14 +99,15 @@ If you find Fast R-CNN useful in your research, please consider citing:
     # and your Makefile.config in place, then simply do:
     make -j8 && make pycaffe
     ```
-    
-5. Download pre-computed Fast R-CNN detectors
+
+5. Download pre-computed Faster R-CNN detectors
     ```Shell
     cd $FRCN_ROOT
-    ./data/scripts/fetch_fast_rcnn_models.sh
+    ./data/scripts/fetch_faster_rcnn_models.sh
     ```
 
-    This will populate the `$FRCN_ROOT/data` folder with `fast_rcnn_models`. See `data/README.md` for details.
+    This will populate the `$FRCN_ROOT/data` folder with `faster_rcnn_models`. See `data/README.md` for details.
+    These models were trained on VOC 2007 trainval.
 
 ### Demo
 
@@ -110,37 +120,7 @@ To run the demo
 cd $FRCN_ROOT
 ./tools/demo.py
 ```
-The demo performs detection using a VGG16 network trained for detection on PASCAL VOC 2007. The object proposals are pre-computed in order to reduce installation requirements.
-
-**Note:** If the demo crashes Caffe because your GPU doesn't have enough memory, try running the demo with a small network, e.g., `./tools/demo.py --net caffenet` or with `--net vgg_cnn_m_1024`. Or run in CPU mode `./tools/demo.py --cpu`. Type `./tools/demo.py -h` for usage.
-
-**MATLAB**
-
-There's also a *basic* MATLAB demo, though it's missing some minor bells and whistles compared to the Python version.
-```Shell
-cd $FRCN_ROOT/matlab
-matlab # wait for matlab to start...
-
-# At the matlab prompt, run the script:
->> fast_rcnn_demo
-```
-
-Fast R-CNN training is implemented in Python only, but test-time detection functionality also exists in MATLAB.
-See `matlab/fast_rcnn_demo.m` and `matlab/fast_rcnn_im_detect.m` for details.
-
-**Computing object proposals**
-
-The demo uses pre-computed selective search proposals computed with [this code](https://github.com/rbgirshick/rcnn/blob/master/selective_search/selective_search_boxes.m).
-If you'd like to compute proposals on your own images, there are many options.
-Here are some pointers; if you run into trouble using these resources please direct questions to the respective authors.
-
-1. Selective Search: [original matlab code](http://disi.unitn.it/~uijlings/MyHomepage/index.php#page=projects1), [python wrapper](https://github.com/sergeyk/selective_search_ijcv_with_python)
-2. EdgeBoxes: [matlab code](https://github.com/pdollar/edges)
-3. GOP and LPO: [python code](http://www.philkr.net/)
-4. MCG: [matlab code](http://www.eecs.berkeley.edu/Research/Projects/CS/vision/grouping/mcg/)
-5. RIGOR: [matlab code](http://cpl.cc.gatech.edu/projects/RIGOR/)
-
-Apologies if I've left your method off this list. Feel free to contact me and ask for it to be included.
+The demo performs detection using a VGG16 network trained for detection on PASCAL VOC 2007.
 
 ### Beyond the demo: installation for training and testing models
 1. Download the training, validation, test data and VOCdevkit
@@ -150,7 +130,7 @@ Apologies if I've left your method off this list. Feel free to contact me and as
 	wget http://pascallin.ecs.soton.ac.uk/challenges/VOC/voc2007/VOCtest_06-Nov-2007.tar
 	wget http://pascallin.ecs.soton.ac.uk/challenges/VOC/voc2007/VOCdevkit_08-Jun-2007.tar
 	```
-	
+
 2. Extract all of these tars into one directory named `VOCdevkit`
 
 	```Shell
@@ -167,7 +147,7 @@ Apologies if I've left your method off this list. Feel free to contact me and as
   	$VOCdevkit/VOC2007                    # image sets, annotations, etc.
   	# ... and several other directories ...
   	```
-  	
+
 4. Create symlinks for the PASCAL VOC dataset
 
 	```Shell
@@ -176,79 +156,31 @@ Apologies if I've left your method off this list. Feel free to contact me and as
     ```
     Using symlinks is a good idea because you will likely want to share the same PASCAL dataset installation between multiple projects.
 5. [Optional] follow similar steps to get PASCAL VOC 2010 and 2012
-6. Follow the next sections to download pre-computed object proposals and pre-trained ImageNet models
-
-### Download pre-computed Selective Search object proposals
-
-Pre-computed selective search boxes can also be downloaded for VOC2007 and VOC2012.
-
-```Shell
-cd $FRCN_ROOT
-./data/scripts/fetch_selective_search_data.sh
-```
-
-This will populate the `$FRCN_ROOT/data` folder with `selective_selective_data`.
+6. Follow the next sections to download pre-trained ImageNet models
 
 ### Download pre-trained ImageNet models
 
-Pre-trained ImageNet models can be downloaded for the three networks described in the paper: CaffeNet (model **S**), VGG_CNN_M_1024 (model **M**), and VGG16 (model **L**).
+Pre-trained ImageNet models can be downloaded for the three networks described in the paper: ZF and VGG16.
 
 ```Shell
 cd $FRCN_ROOT
 ./data/scripts/fetch_imagenet_models.sh
 ```
-These models are all available in the [Caffe Model Zoo](https://github.com/BVLC/caffe/wiki/Model-Zoo), but are provided here for your convenience.
+VGG16 comes from the [Caffe Model Zoo](https://github.com/BVLC/caffe/wiki/Model-Zoo), but is provided here for your convenience.
+ZF was trained at MSRA.
 
 ### Usage
 
-**Train** a Fast R-CNN detector. For example, train a VGG16 network on VOC 2007 trainval:
+To train and test a Faster R-CNN detector use `experiments/scripts/faster_rcnn_alt_opt.sh`.
+Output is written underneath `$FRCN_ROOT/output`.
 
 ```Shell
-./tools/train_net.py --gpu 0 --solver models/VGG16/solver.prototxt \
-	--weights data/imagenet_models/VGG16.v2.caffemodel
+cd $FRCN_ROOT
+./experiments/scripts/faster_rcnn_alt_opt.sh [GPU_ID] [NET] [--set ...]
+# GPU_ID is the GPU you want to train on
+# NET in {ZF, VGG_CNN_M_1024, VGG16} is the network arch to use
+# --set ... allows you to specify fast_rcnn.config options, e.g.
+#   --set EXP_DIR seed_rng1701 RNG_SEED 1701
 ```
 
-If you see this error
-
-```
-EnvironmentError: MATLAB command 'matlab' not found. Please add 'matlab' to your PATH.
-```
-
-then you need to make sure the `matlab` binary is in your `$PATH`. MATLAB is currently required for PASCAL VOC evaluation.
-
-**Test** a Fast R-CNN detector. For example, test the VGG 16 network on VOC 2007 test:
-
-```Shell
-./tools/test_net.py --gpu 1 --def models/VGG16/test.prototxt \
-	--net output/default/voc_2007_trainval/vgg16_fast_rcnn_iter_40000.caffemodel
-```
-
-Test output is written underneath `$FRCN_ROOT/output`.
-
-**Compress** a Fast R-CNN model using truncated SVD on the fully-connected layers:
-
-```Shell
-./tools/compress_net.py --def models/VGG16/test.prototxt \
-	--def-svd models/VGG16/compressed/test.prototxt \
-    --net output/default/voc_2007_trainval/vgg16_fast_rcnn_iter_40000.caffemodel
-# Test the model you just compressed
-./tools/test_net.py --gpu 0 --def models/VGG16/compressed/test.prototxt \
-	--net output/default/voc_2007_trainval/vgg16_fast_rcnn_iter_40000_svd_fc6_1024_fc7_256.caffemodel
-```
-
-### Experiment scripts
-Scripts to reproduce the experiments in the paper (*up to stochastic variation*) are provided in `$FRCN_ROOT/experiments/scripts`. Log files for experiments are located in `experiments/logs`.
-
-**Note:** Until recently (commit a566e39), the RNG seed for Caffe was not fixed during training. Now it's fixed, unless `train_net.py` is called with the `--rand` flag.
-Results generated before this commit will have some stochastic variation.
-
-### Extra downloads
-
-- [Experiment logs](http://www.cs.berkeley.edu/~rbg/fast-rcnn-data/fast_rcnn_experiments.tgz)
-- PASCAL VOC test set detections
-    - [voc_2007_test_results_fast_rcnn_caffenet_trained_on_2007_trainval.tgz](http://www.cs.berkeley.edu/~rbg/fast-rcnn-data/voc_2007_test_results_fast_rcnn_caffenet_trained_on_2007_trainval.tgz)
-    - [voc_2007_test_results_fast_rcnn_vgg16_trained_on_2007_trainval.tgz](http://www.cs.berkeley.edu/~rbg/fast-rcnn-data/voc_2007_test_results_fast_rcnn_vgg16_trained_on_2007_trainval.tgz)
-    - [voc_2007_test_results_fast_rcnn_vgg_cnn_m_1024_trained_on_2007_trainval.tgz](http://www.cs.berkeley.edu/~rbg/fast-rcnn-data/voc_2007_test_results_fast_rcnn_vgg_cnn_m_1024_trained_on_2007_trainval.tgz)
-    - [voc_2012_test_results_fast_rcnn_vgg16_trained_on_2007_trainvaltest_2012_trainval.tgz](http://www.cs.berkeley.edu/~rbg/fast-rcnn-data/voc_2012_test_results_fast_rcnn_vgg16_trained_on_2007_trainvaltest_2012_trainval.tgz)
-    - [voc_2012_test_results_fast_rcnn_vgg16_trained_on_2012_trainval.tgz](http://www.cs.berkeley.edu/~rbg/fast-rcnn-data/voc_2012_test_results_fast_rcnn_vgg16_trained_on_2012_trainval.tgz)
-- [Fast R-CNN VGG16 model](http://www.cs.berkeley.edu/~rbg/fast-rcnn-data/voc12_submission.tgz) trained on VOC07 train,val,test union with VOC12 train,val
+("alt opt" refers to the alternating optimization training algorithm described in the NIPS paper.)

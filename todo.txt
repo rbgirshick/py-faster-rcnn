@@ -1,3 +1,0 @@
-- ImageNet ILSVRC detection dataset
-- COCO bounding-box detection
-- Port PASCAL evaluation code from Matlab to Python

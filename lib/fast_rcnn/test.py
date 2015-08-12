@@ -8,12 +8,13 @@
 """Test a Fast R-CNN network on an imdb (image database)."""
 
 from fast_rcnn.config import cfg, get_output_dir
+from fast_rcnn.bbox_transform import clip_boxes, bbox_transform_inv
 import argparse
 from utils.timer import Timer
 import numpy as np
 import cv2
 import caffe
-from utils.cython_nms import nms
+from fast_rcnn.nms_wrapper import nms
 import cPickle
 import heapq
 from utils.blob import im_list_to_blob
@@ -101,76 +102,30 @@ def _get_blobs(im, rois):
     """Convert an image and RoIs within that image into network inputs."""
     blobs = {'data' : None, 'rois' : None}
     blobs['data'], im_scale_factors = _get_image_blob(im)
-    blobs['rois'] = _get_rois_blob(rois, im_scale_factors)
+    if not cfg.TEST.HAS_RPN:
+        blobs['rois'] = _get_rois_blob(rois, im_scale_factors)
     return blobs, im_scale_factors
 
-def _bbox_pred(boxes, box_deltas):
-    """Transform the set of class-agnostic boxes into class-specific boxes
-    by applying the predicted offsets (box_deltas)
-    """
-    if boxes.shape[0] == 0:
-        return np.zeros((0, box_deltas.shape[1]))
-
-    boxes = boxes.astype(np.float, copy=False)
-    widths = boxes[:, 2] - boxes[:, 0] + cfg.EPS
-    heights = boxes[:, 3] - boxes[:, 1] + cfg.EPS
-    ctr_x = boxes[:, 0] + 0.5 * widths
-    ctr_y = boxes[:, 1] + 0.5 * heights
-
-    dx = box_deltas[:, 0::4]
-    dy = box_deltas[:, 1::4]
-    dw = box_deltas[:, 2::4]
-    dh = box_deltas[:, 3::4]
-
-    pred_ctr_x = dx * widths[:, np.newaxis] + ctr_x[:, np.newaxis]
-    pred_ctr_y = dy * heights[:, np.newaxis] + ctr_y[:, np.newaxis]
-    pred_w = np.exp(dw) * widths[:, np.newaxis]
-    pred_h = np.exp(dh) * heights[:, np.newaxis]
-
-    pred_boxes = np.zeros(box_deltas.shape)
-    # x1
-    pred_boxes[:, 0::4] = pred_ctr_x - 0.5 * pred_w
-    # y1
-    pred_boxes[:, 1::4] = pred_ctr_y - 0.5 * pred_h
-    # x2
-    pred_boxes[:, 2::4] = pred_ctr_x + 0.5 * pred_w
-    # y2
-    pred_boxes[:, 3::4] = pred_ctr_y + 0.5 * pred_h
-
-    return pred_boxes
-
-def _clip_boxes(boxes, im_shape):
-    """Clip boxes to image boundaries."""
-    # x1 >= 0
-    boxes[:, 0::4] = np.maximum(boxes[:, 0::4], 0)
-    # y1 >= 0
-    boxes[:, 1::4] = np.maximum(boxes[:, 1::4], 0)
-    # x2 < im_shape[1]
-    boxes[:, 2::4] = np.minimum(boxes[:, 2::4], im_shape[1] - 1)
-    # y2 < im_shape[0]
-    boxes[:, 3::4] = np.minimum(boxes[:, 3::4], im_shape[0] - 1)
-    return boxes
-
-def im_detect(net, im, boxes):
+def im_detect(net, im, boxes=None):
     """Detect object classes in an image given object proposals.
 
     Arguments:
         net (caffe.Net): Fast R-CNN network to use
         im (ndarray): color image to test (in BGR order)
-        boxes (ndarray): R x 4 array of object proposals
+        boxes (ndarray): R x 4 array of object proposals or None (for RPN)
 
     Returns:
         scores (ndarray): R x K array of object class scores (K includes
             background as object category 0)
         boxes (ndarray): R x (4*K) array of predicted bounding boxes
     """
-    blobs, unused_im_scale_factors = _get_blobs(im, boxes)
+    blobs, im_scales = _get_blobs(im, boxes)
 
     # When mapping from image ROIs to feature map ROIs, there's some aliasing
     # (some distinct image ROIs get mapped to the same feature ROI).
     # Here, we identify duplicate feature ROIs, so we only compute features
     # on the unique subset.
-    if cfg.DEDUP_BOXES > 0:
+    if cfg.DEDUP_BOXES > 0 and not cfg.TEST.HAS_RPN:
         v = np.array([1, 1e3, 1e6, 1e9, 1e12])
         hashes = np.round(blobs['rois'] * cfg.DEDUP_BOXES).dot(v)
         _, index, inv_index = np.unique(hashes, return_index=True,
@@ -178,11 +133,33 @@ def im_detect(net, im, boxes):
         blobs['rois'] = blobs['rois'][index, :]
         boxes = boxes[index, :]
 
+    if cfg.TEST.HAS_RPN:
+        im_blob = blobs['data']
+        blobs['im_info'] = np.array(
+            [[im_blob.shape[2], im_blob.shape[3], im_scales[0]]],
+            dtype=np.float32)
+
     # reshape network inputs
     net.blobs['data'].reshape(*(blobs['data'].shape))
-    net.blobs['rois'].reshape(*(blobs['rois'].shape))
-    blobs_out = net.forward(data=blobs['data'].astype(np.float32, copy=False),
-                            rois=blobs['rois'].astype(np.float32, copy=False))
+    if cfg.TEST.HAS_RPN:
+        net.blobs['im_info'].reshape(*(blobs['im_info'].shape))
+    else:
+        net.blobs['rois'].reshape(*(blobs['rois'].shape))
+
+    # do forward
+    forward_kwargs = {'data': blobs['data'].astype(np.float32, copy=False)}
+    if cfg.TEST.HAS_RPN:
+        forward_kwargs['im_info'] = blobs['im_info'].astype(np.float32, copy=False)
+    else:
+        forward_kwargs['rois'] = blobs['rois'].astype(np.float32, copy=False)
+    blobs_out = net.forward(**forward_kwargs)
+
+    if cfg.TEST.HAS_RPN:
+        assert len(im_scales) == 1, "Only single-image batch implemented"
+        rois = net.blobs['rois'].data.copy()
+        # unscale back to raw image space
+        boxes = rois[:, 1:5] / im_scales[0]
+
     if cfg.TEST.SVM:
         # use the raw scores before softmax under the assumption they
         # were trained as linear SVMs
@@ -194,13 +171,13 @@ def im_detect(net, im, boxes):
     if cfg.TEST.BBOX_REG:
         # Apply bounding-box regression deltas
         box_deltas = blobs_out['bbox_pred']
-        pred_boxes = _bbox_pred(boxes, box_deltas)
-        pred_boxes = _clip_boxes(pred_boxes, im.shape)
+        pred_boxes = bbox_transform_inv(boxes, box_deltas)
+        pred_boxes = clip_boxes(pred_boxes, im.shape)
     else:
         # Simply repeat the boxes, once for each class
         pred_boxes = np.tile(boxes, (1, scores.shape[1]))
 
-    if cfg.DEDUP_BOXES > 0:
+    if cfg.DEDUP_BOXES > 0 and not cfg.TEST.HAS_RPN:
         # Map scores and predictions back to the original set of boxes
         scores = scores[inv_index, :]
         pred_boxes = pred_boxes[inv_index, :]
@@ -272,17 +249,23 @@ def test_net(net, imdb):
     # timers
     _t = {'im_detect' : Timer(), 'misc' : Timer()}
 
-    roidb = imdb.roidb
+    if not cfg.TEST.HAS_RPN:
+        roidb = imdb.roidb
+
     for i in xrange(num_images):
+        # filter out any ground truth boxes
+        if cfg.TEST.HAS_RPN:
+            box_proposals = None
+        else:
+            box_proposals = roidb[i]['boxes'][roidb[i]['gt_classes'] == 0]
         im = cv2.imread(imdb.image_path_at(i))
         _t['im_detect'].tic()
-        scores, boxes = im_detect(net, im, roidb[i]['boxes'])
+        scores, boxes = im_detect(net, im, box_proposals)
         _t['im_detect'].toc()
 
         _t['misc'].tic()
         for j in xrange(1, imdb.num_classes):
-            inds = np.where((scores[:, j] > thresh[j]) &
-                            (roidb[i]['gt_classes'] == 0))[0]
+            inds = np.where(scores[:, j] > thresh[j])[0]
             cls_scores = scores[inds, j]
             cls_boxes = boxes[inds, j*4:(j+1)*4]
             top_inds = np.argsort(-cls_scores)[:max_per_image]

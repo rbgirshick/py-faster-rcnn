@@ -28,39 +28,55 @@ def get_minibatch(roidb, num_classes):
     # Get the input image blob, formatted for caffe
     im_blob, im_scales = _get_image_blob(roidb, random_scale_inds)
 
-    # Now, build the region of interest and label blobs
-    rois_blob = np.zeros((0, 5), dtype=np.float32)
-    labels_blob = np.zeros((0), dtype=np.float32)
-    bbox_targets_blob = np.zeros((0, 4 * num_classes), dtype=np.float32)
-    bbox_loss_blob = np.zeros(bbox_targets_blob.shape, dtype=np.float32)
-    # all_overlaps = []
-    for im_i in xrange(num_images):
-        labels, overlaps, im_rois, bbox_targets, bbox_loss \
-            = _sample_rois(roidb[im_i], fg_rois_per_image, rois_per_image,
-                           num_classes)
+    blobs = {'data': im_blob}
 
-        # Add to RoIs blob
-        rois = _project_im_rois(im_rois, im_scales[im_i])
-        batch_ind = im_i * np.ones((rois.shape[0], 1))
-        rois_blob_this_image = np.hstack((batch_ind, rois))
-        rois_blob = np.vstack((rois_blob, rois_blob_this_image))
+    if cfg.TRAIN.HAS_RPN:
+        assert len(im_scales) == 1, "Single batch only"
+        assert len(roidb) == 1, "Single batch only"
+        # gt boxes: (x1, y1, x2, y2, cls)
+        gt_inds = np.where(roidb[0]['gt_classes'] != 0)[0]
+        gt_boxes = np.empty((len(gt_inds), 5), dtype=np.float32)
+        gt_boxes[:, 0:4] = roidb[0]['boxes'][gt_inds, :] * im_scales[0]
+        gt_boxes[:, 4] = roidb[0]['gt_classes'][gt_inds]
+        blobs['gt_boxes'] = gt_boxes
+        blobs['im_info'] = np.array(
+            [[im_blob.shape[2], im_blob.shape[3], im_scales[0]]],
+            dtype=np.float32)
+    else: # not using RPN
+        # Now, build the region of interest and label blobs
+        rois_blob = np.zeros((0, 5), dtype=np.float32)
+        labels_blob = np.zeros((0), dtype=np.float32)
+        bbox_targets_blob = np.zeros((0, 4 * num_classes), dtype=np.float32)
+        bbox_inside_blob = np.zeros(bbox_targets_blob.shape, dtype=np.float32)
+        # all_overlaps = []
+        for im_i in xrange(num_images):
+            labels, overlaps, im_rois, bbox_targets, bbox_inside_weights \
+                = _sample_rois(roidb[im_i], fg_rois_per_image, rois_per_image,
+                               num_classes)
 
-        # Add to labels, bbox targets, and bbox loss blobs
-        labels_blob = np.hstack((labels_blob, labels))
-        bbox_targets_blob = np.vstack((bbox_targets_blob, bbox_targets))
-        bbox_loss_blob = np.vstack((bbox_loss_blob, bbox_loss))
-        # all_overlaps = np.hstack((all_overlaps, overlaps))
+            # Add to RoIs blob
+            rois = _project_im_rois(im_rois, im_scales[im_i])
+            batch_ind = im_i * np.ones((rois.shape[0], 1))
+            rois_blob_this_image = np.hstack((batch_ind, rois))
+            rois_blob = np.vstack((rois_blob, rois_blob_this_image))
 
-    # For debug visualizations
-    # _vis_minibatch(im_blob, rois_blob, labels_blob, all_overlaps)
+            # Add to labels, bbox targets, and bbox loss blobs
+            labels_blob = np.hstack((labels_blob, labels))
+            bbox_targets_blob = np.vstack((bbox_targets_blob, bbox_targets))
+            bbox_inside_blob = np.vstack((bbox_inside_blob, bbox_inside_weights))
+            # all_overlaps = np.hstack((all_overlaps, overlaps))
 
-    blobs = {'data': im_blob,
-             'rois': rois_blob,
-             'labels': labels_blob}
+        # For debug visualizations
+        # _vis_minibatch(im_blob, rois_blob, labels_blob, all_overlaps)
 
-    if cfg.TRAIN.BBOX_REG:
-        blobs['bbox_targets'] = bbox_targets_blob
-        blobs['bbox_loss_weights'] = bbox_loss_blob
+        blobs['rois'] = rois_blob
+        blobs['labels'] = labels_blob
+
+        if cfg.TRAIN.BBOX_REG:
+            blobs['bbox_targets'] = bbox_targets_blob
+            blobs['bbox_inside_weights'] = bbox_inside_blob
+            blobs['bbox_outside_weights'] = \
+                np.array(bbox_inside_blob > 0).astype(np.float32)
 
     return blobs
 
@@ -80,8 +96,8 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image, num_classes):
     fg_rois_per_this_image = np.minimum(fg_rois_per_image, fg_inds.size)
     # Sample foreground regions without replacement
     if fg_inds.size > 0:
-        fg_inds = npr.choice(fg_inds, size=fg_rois_per_this_image,
-                             replace=False)
+        fg_inds = npr.choice(
+                fg_inds, size=fg_rois_per_this_image, replace=False)
 
     # Select background RoIs as those within [BG_THRESH_LO, BG_THRESH_HI)
     bg_inds = np.where((overlaps < cfg.TRAIN.BG_THRESH_HI) &
@@ -93,8 +109,8 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image, num_classes):
                                         bg_inds.size)
     # Sample foreground regions without replacement
     if bg_inds.size > 0:
-        bg_inds = npr.choice(bg_inds, size=bg_rois_per_this_image,
-                             replace=False)
+        bg_inds = npr.choice(
+                bg_inds, size=bg_rois_per_this_image, replace=False)
 
     # The indices that we're selecting (both fg and bg)
     keep_inds = np.append(fg_inds, bg_inds)
@@ -105,11 +121,10 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image, num_classes):
     overlaps = overlaps[keep_inds]
     rois = rois[keep_inds]
 
-    bbox_targets, bbox_loss_weights = \
-            _get_bbox_regression_labels(roidb['bbox_targets'][keep_inds, :],
-                                        num_classes)
+    bbox_targets, bbox_inside_weights = _get_bbox_regression_labels(
+            roidb['bbox_targets'][keep_inds, :], num_classes)
 
-    return labels, overlaps, rois, bbox_targets, bbox_loss_weights
+    return labels, overlaps, rois, bbox_targets, bbox_inside_weights
 
 def _get_image_blob(roidb, scale_inds):
     """Builds an input blob from the images in the roidb at the specified
@@ -148,19 +163,19 @@ def _get_bbox_regression_labels(bbox_target_data, num_classes):
 
     Returns:
         bbox_target_data (ndarray): N x 4K blob of regression targets
-        bbox_loss_weights (ndarray): N x 4K blob of loss weights
+        bbox_inside_weights (ndarray): N x 4K blob of loss weights
     """
     clss = bbox_target_data[:, 0]
     bbox_targets = np.zeros((clss.size, 4 * num_classes), dtype=np.float32)
-    bbox_loss_weights = np.zeros(bbox_targets.shape, dtype=np.float32)
+    bbox_inside_weights = np.zeros(bbox_targets.shape, dtype=np.float32)
     inds = np.where(clss > 0)[0]
     for ind in inds:
         cls = clss[ind]
         start = 4 * cls
         end = start + 4
         bbox_targets[ind, start:end] = bbox_target_data[ind, 1:]
-        bbox_loss_weights[ind, start:end] = [1., 1., 1., 1.]
-    return bbox_targets, bbox_loss_weights
+        bbox_inside_weights[ind, start:end] = cfg.TRAIN.BBOX_INSIDE_WEIGHTS
+    return bbox_targets, bbox_inside_weights
 
 def _vis_minibatch(im_blob, rois_blob, labels_blob, overlaps):
     """Visualize a mini-batch for debugging."""

@@ -4,8 +4,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"
 cd $DIR
 
 FILE=imagenet_models.tgz
-URL=http://www.cs.berkeley.edu/~rbg/fast-rcnn-data/$FILE
-CHECKSUM=8b1d4b9da0593fc70ef403284f810adc
+URL=http://www.cs.berkeley.edu/~rbg/faster-rcnn-data/$FILE
+CHECKSUM=ed34ca912d6782edfb673a8c3a0bda6d
 
 if [ -f $FILE ]; then
   echo "File already exists. Checking md5..."

@@ -40,7 +40,9 @@ class pascal_voc(datasets.imdb):
         # PASCAL specific config options
         self.config = {'cleanup'  : True,
                        'use_salt' : True,
-                       'top_k'    : 2000}
+                       'top_k'    : 2000,
+                       'use_diff' : False,
+                       'rpn_file' : None}
 
         assert os.path.exists(self._devkit_path), \
                 'VOCdevkit path does not exist: {}'.format(self._devkit_path)
@@ -132,6 +134,25 @@ class pascal_voc(datasets.imdb):
 
         return roidb
 
+    def rpn_roidb(self):
+        if int(self._year) == 2007 or self._image_set != 'test':
+            gt_roidb = self.gt_roidb()
+            rpn_roidb = self._load_rpn_roidb(gt_roidb)
+            roidb = datasets.imdb.merge_roidbs(gt_roidb, rpn_roidb)
+        else:
+            roidb = self._load_rpn_roidb(None)
+
+        return roidb
+
+    def _load_rpn_roidb(self, gt_roidb):
+        filename = self.config['rpn_file']
+        print 'loading {}'.format(filename)
+        assert os.path.exists(filename), \
+               'rpn data not found at: {}'.format(filename)
+        with open(filename, 'rb') as f:
+            box_list = cPickle.load(f)
+        return self.create_roidb_from_box_list(box_list, gt_roidb)
+
     def _load_selective_search_roidb(self, gt_roidb):
         filename = os.path.abspath(os.path.join(self.cache_path, '..',
                                                 'selective_search_data',
@@ -143,48 +164,6 @@ class pascal_voc(datasets.imdb):
         box_list = []
         for i in xrange(raw_data.shape[0]):
             box_list.append(raw_data[i][:, (1, 0, 3, 2)] - 1)
-
-        return self.create_roidb_from_box_list(box_list, gt_roidb)
-
-    def selective_search_IJCV_roidb(self):
-        """
-        Return the database of selective search regions of interest.
-        Ground-truth ROIs are also included.
-
-        This function loads/saves from/to a cache file to speed up future calls.
-        """
-        cache_file = os.path.join(self.cache_path,
-                '{:s}_selective_search_IJCV_top_{:d}_roidb.pkl'.
-                format(self.name, self.config['top_k']))
-
-        if os.path.exists(cache_file):
-            with open(cache_file, 'rb') as fid:
-                roidb = cPickle.load(fid)
-            print '{} ss roidb loaded from {}'.format(self.name, cache_file)
-            return roidb
-
-        gt_roidb = self.gt_roidb()
-        ss_roidb = self._load_selective_search_IJCV_roidb(gt_roidb)
-        roidb = datasets.imdb.merge_roidbs(gt_roidb, ss_roidb)
-        with open(cache_file, 'wb') as fid:
-            cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
-        print 'wrote ss roidb to {}'.format(cache_file)
-
-        return roidb
-
-    def _load_selective_search_IJCV_roidb(self, gt_roidb):
-        IJCV_path = os.path.abspath(os.path.join(self.cache_path, '..',
-                                                 'selective_search_IJCV_data',
-                                                 'voc_' + self._year))
-        assert os.path.exists(IJCV_path), \
-               'Selective search IJCV data not found at: {}'.format(IJCV_path)
-
-        top_k = self.config['top_k']
-        box_list = []
-        for i in xrange(self.num_images):
-            filename = os.path.join(IJCV_path, self.image_index[i] + '.mat')
-            raw_data = sio.loadmat(filename)
-            box_list.append((raw_data['boxes'][:top_k, :]-1).astype(np.uint16))
 
         return self.create_roidb_from_box_list(box_list, gt_roidb)
 
@@ -202,6 +181,14 @@ class pascal_voc(datasets.imdb):
             data = minidom.parseString(f.read())
 
         objs = data.getElementsByTagName('object')
+        if not self.config['use_diff']:
+            # Exclude the samples labeled as difficult
+            non_diff_objs = [obj for obj in objs
+                             if int(get_data_from_tag(obj, 'difficult')) == 0]
+            if len(non_diff_objs) != len(objs):
+                print 'Removed {} difficult objects' \
+                    .format(len(objs) - len(non_diff_objs))
+            objs = non_diff_objs
         num_objs = len(objs)
 
         boxes = np.zeros((num_objs, 4), dtype=np.uint16)

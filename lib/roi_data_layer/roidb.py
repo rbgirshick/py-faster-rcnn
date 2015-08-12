@@ -9,7 +9,9 @@
 
 import numpy as np
 from fast_rcnn.config import cfg
-import utils.cython_bbox
+from fast_rcnn.bbox_transform import bbox_transform
+from utils.cython_bbox import bbox_overlaps
+import PIL
 
 def prepare_roidb(imdb):
     """Enrich the imdb's roidb by adding some derived quantities that
@@ -18,9 +20,13 @@ def prepare_roidb(imdb):
     each ground-truth box. The class with maximum overlap is also
     recorded.
     """
+    sizes = [PIL.Image.open(imdb.image_path_at(i)).size
+             for i in xrange(imdb.num_images)]
     roidb = imdb.roidb
     for i in xrange(len(imdb.image_index)):
         roidb[i]['image'] = imdb.image_path_at(i)
+        roidb[i]['width'] = sizes[i][0]
+        roidb[i]['height'] = sizes[i][1]
         # need gt_overlaps as a dense array for argmax
         gt_overlaps = roidb[i]['gt_overlaps'].toarray()
         # max overlap with gt over classes (columns)
@@ -52,30 +58,49 @@ def add_bbox_regression_targets(roidb):
         roidb[im_i]['bbox_targets'] = \
                 _compute_targets(rois, max_overlaps, max_classes)
 
-    # Compute values needed for means and stds
-    # var(x) = E(x^2) - E(x)^2
-    class_counts = np.zeros((num_classes, 1)) + cfg.EPS
-    sums = np.zeros((num_classes, 4))
-    squared_sums = np.zeros((num_classes, 4))
-    for im_i in xrange(num_images):
-        targets = roidb[im_i]['bbox_targets']
-        for cls in xrange(1, num_classes):
-            cls_inds = np.where(targets[:, 0] == cls)[0]
-            if cls_inds.size > 0:
-                class_counts[cls] += cls_inds.size
-                sums[cls, :] += targets[cls_inds, 1:].sum(axis=0)
-                squared_sums[cls, :] += (targets[cls_inds, 1:] ** 2).sum(axis=0)
+    if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED:
+        # Use fixed / precomputed "means" and "stds" instead of empirical values
+        means = np.tile(
+                np.array(cfg.TRAIN.BBOX_NORMALIZE_MEANS), (num_classes, 1))
+        stds = np.tile(
+                np.array(cfg.TRAIN.BBOX_NORMALIZE_STDS), (num_classes, 1))
+    else:
+        # Compute values needed for means and stds
+        # var(x) = E(x^2) - E(x)^2
+        class_counts = np.zeros((num_classes, 1)) + cfg.EPS
+        sums = np.zeros((num_classes, 4))
+        squared_sums = np.zeros((num_classes, 4))
+        for im_i in xrange(num_images):
+            targets = roidb[im_i]['bbox_targets']
+            for cls in xrange(1, num_classes):
+                cls_inds = np.where(targets[:, 0] == cls)[0]
+                if cls_inds.size > 0:
+                    class_counts[cls] += cls_inds.size
+                    sums[cls, :] += targets[cls_inds, 1:].sum(axis=0)
+                    squared_sums[cls, :] += \
+                            (targets[cls_inds, 1:] ** 2).sum(axis=0)
 
-    means = sums / class_counts
-    stds = np.sqrt(squared_sums / class_counts - means ** 2)
+        means = sums / class_counts
+        stds = np.sqrt(squared_sums / class_counts - means ** 2)
+
+    print 'bbox target means:'
+    print means
+    print means[1:, :].mean(axis=0) # ignore bg class
+    print 'bbox target stdevs:'
+    print stds
+    print stds[1:, :].mean(axis=0) # ignore bg class
 
     # Normalize targets
-    for im_i in xrange(num_images):
-        targets = roidb[im_i]['bbox_targets']
-        for cls in xrange(1, num_classes):
-            cls_inds = np.where(targets[:, 0] == cls)[0]
-            roidb[im_i]['bbox_targets'][cls_inds, 1:] -= means[cls, :]
-            roidb[im_i]['bbox_targets'][cls_inds, 1:] /= stds[cls, :]
+    if cfg.TRAIN.BBOX_NORMALIZE_TARGETS:
+        print "Normalizing targets"
+        for im_i in xrange(num_images):
+            targets = roidb[im_i]['bbox_targets']
+            for cls in xrange(1, num_classes):
+                cls_inds = np.where(targets[:, 0] == cls)[0]
+                roidb[im_i]['bbox_targets'][cls_inds, 1:] -= means[cls, :]
+                roidb[im_i]['bbox_targets'][cls_inds, 1:] /= stds[cls, :]
+    else:
+        print "NOT normalizing targets"
 
     # These values will be needed for making predictions
     # (the predicts will need to be unnormalized and uncentered)
@@ -83,17 +108,15 @@ def add_bbox_regression_targets(roidb):
 
 def _compute_targets(rois, overlaps, labels):
     """Compute bounding-box regression targets for an image."""
-    # Ensure ROIs are floats
-    rois = rois.astype(np.float, copy=False)
-
     # Indices of ground-truth ROIs
     gt_inds = np.where(overlaps == 1)[0]
     # Indices of examples for which we try to make predictions
     ex_inds = np.where(overlaps >= cfg.TRAIN.BBOX_THRESH)[0]
 
     # Get IoU overlap between each ex ROI and gt ROI
-    ex_gt_overlaps = utils.cython_bbox.bbox_overlaps(rois[ex_inds, :],
-                                                     rois[gt_inds, :])
+    ex_gt_overlaps = bbox_overlaps(
+        np.ascontiguousarray(rois[ex_inds, :], dtype=np.float),
+        np.ascontiguousarray(rois[gt_inds, :], dtype=np.float))
 
     # Find which gt ROI each ex ROI has max overlap with:
     # this will be the ex ROI's gt target
@@ -101,25 +124,7 @@ def _compute_targets(rois, overlaps, labels):
     gt_rois = rois[gt_inds[gt_assignment], :]
     ex_rois = rois[ex_inds, :]
 
-    ex_widths = ex_rois[:, 2] - ex_rois[:, 0] + cfg.EPS
-    ex_heights = ex_rois[:, 3] - ex_rois[:, 1] + cfg.EPS
-    ex_ctr_x = ex_rois[:, 0] + 0.5 * ex_widths
-    ex_ctr_y = ex_rois[:, 1] + 0.5 * ex_heights
-
-    gt_widths = gt_rois[:, 2] - gt_rois[:, 0] + cfg.EPS
-    gt_heights = gt_rois[:, 3] - gt_rois[:, 1] + cfg.EPS
-    gt_ctr_x = gt_rois[:, 0] + 0.5 * gt_widths
-    gt_ctr_y = gt_rois[:, 1] + 0.5 * gt_heights
-
-    targets_dx = (gt_ctr_x - ex_ctr_x) / ex_widths
-    targets_dy = (gt_ctr_y - ex_ctr_y) / ex_heights
-    targets_dw = np.log(gt_widths / ex_widths)
-    targets_dh = np.log(gt_heights / ex_heights)
-
     targets = np.zeros((rois.shape[0], 5), dtype=np.float32)
     targets[ex_inds, 0] = labels[ex_inds]
-    targets[ex_inds, 1] = targets_dx
-    targets[ex_inds, 2] = targets_dy
-    targets[ex_inds, 3] = targets_dw
-    targets[ex_inds, 4] = targets_dh
+    targets[ex_inds, 1:] = bbox_transform(ex_rois, gt_rois)
     return targets

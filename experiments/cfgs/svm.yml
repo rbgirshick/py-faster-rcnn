@@ -1,8 +1,0 @@
-EXP_DIR: svm
-TRAIN:
-  # don't use flipped examples when training SVMs for two reasons:
-  # 1) R-CNN didn't
-  # 2) I've tried and it doesn't help, yet makes SVM training take 2x longer
-  USE_FLIPPED: False
-TEST:
-  SVM: True

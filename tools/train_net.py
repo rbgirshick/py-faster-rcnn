@@ -11,8 +11,9 @@
 
 import _init_paths
 from fast_rcnn.train import get_training_roidb, train_net
-from fast_rcnn.config import cfg, cfg_from_file, get_output_dir
+from fast_rcnn.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
 from datasets.factory import get_imdb
+import datasets.imdb
 import caffe
 import argparse
 import pprint
@@ -45,6 +46,9 @@ def parse_args():
     parser.add_argument('--rand', dest='randomize',
                         help='randomize (do not use a fixed seed)',
                         action='store_true')
+    parser.add_argument('--set', dest='set_cfgs',
+                        help='set config keys', default=None,
+                        nargs=argparse.REMAINDER)
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -52,6 +56,25 @@ def parse_args():
 
     args = parser.parse_args()
     return args
+
+def combined_roidb(imdb_names):
+    def get_roidb(imdb_name):
+        imdb = get_imdb(imdb_name)
+        print 'Loaded dataset `{:s}` for training'.format(imdb.name)
+        imdb.set_proposal_method(cfg.TRAIN.PROPOSAL_METHOD)
+        print 'Set proposal method: {:s}'.format(cfg.TRAIN.PROPOSAL_METHOD)
+        roidb = get_training_roidb(imdb)
+        return roidb
+
+    roidbs = [get_roidb(s) for s in imdb_names.split('+')]
+    roidb = roidbs[0]
+    if len(roidbs) > 1:
+        for r in roidbs[1:]:
+            roidb.extend(r)
+        imdb = datasets.imdb(imdb_names)
+    else:
+        imdb = get_imdb(imdb_names)
+    return imdb, roidb
 
 if __name__ == '__main__':
     args = parse_args()
@@ -61,6 +84,10 @@ if __name__ == '__main__':
 
     if args.cfg_file is not None:
         cfg_from_file(args.cfg_file)
+    if args.set_cfgs is not None:
+        cfg_from_list(args.set_cfgs)
+
+    cfg.GPU_ID = args.gpu_id
 
     print('Using config:')
     pprint.pprint(cfg)
@@ -72,12 +99,10 @@ if __name__ == '__main__':
 
     # set up caffe
     caffe.set_mode_gpu()
-    if args.gpu_id is not None:
-        caffe.set_device(args.gpu_id)
+    caffe.set_device(args.gpu_id)
 
-    imdb = get_imdb(args.imdb_name)
-    print 'Loaded dataset `{:s}` for training'.format(imdb.name)
-    roidb = get_training_roidb(imdb)
+    imdb, roidb = combined_roidb(args.imdb_name)
+    print '{:d} roidb entries'.format(len(roidb))
 
     output_dir = get_output_dir(imdb, None)
     print 'Output will be saved to `{:s}`'.format(output_dir)

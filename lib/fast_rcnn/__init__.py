@@ -4,7 +4,3 @@
 # Licensed under The MIT License [see LICENSE for details]
 # Written by Ross Girshick
 # --------------------------------------------------------
-
-from . import config
-from . import train
-from . import test

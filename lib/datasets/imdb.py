@@ -51,6 +51,10 @@ class imdb(object):
     def roidb_handler(self, val):
         self._roidb_handler = val
 
+    def set_proposal_method(self, method):
+        method = eval('self.' + method + '_roidb')
+        self.roidb_handler = method
+
     @property
     def roidb(self):
         # A roidb is a list of dictionaries, each with the following keys:
@@ -109,7 +113,7 @@ class imdb(object):
             self.roidb.append(entry)
         self._image_index = self._image_index * 2
 
-    def evaluate_recall(self, candidate_boxes, ar_thresh=0.5):
+    def evaluate_recall(self, candidate_boxes=None, ar_thresh=0.5):
         # Record max overlap value for each gt box
         # Return vector of overlap values
         gt_overlaps = np.zeros(0)
@@ -117,7 +121,11 @@ class imdb(object):
             gt_inds = np.where(self.roidb[i]['gt_classes'] > 0)[0]
             gt_boxes = self.roidb[i]['boxes'][gt_inds, :]
 
-            boxes = candidate_boxes[i]
+            if candidate_boxes is None:
+                non_gt_inds = np.where(self.roidb[i]['gt_classes'] == 0)[0]
+                boxes = self.roidb[i]['boxes'][non_gt_inds, :]
+            else:
+                boxes = candidate_boxes[i]
             if boxes.shape[0] == 0:
                 continue
             overlaps = bbox_overlaps(boxes.astype(np.float),

@@ -22,7 +22,22 @@ class RoIDataLayer(caffe.Layer):
 
     def _shuffle_roidb_inds(self):
         """Randomly permute the training roidb."""
-        self._perm = np.random.permutation(np.arange(len(self._roidb)))
+        if cfg.TRAIN.ASPECT_GROUPING:
+            widths = np.array([r['width'] for r in self._roidb])
+            heights = np.array([r['height'] for r in self._roidb])
+            horz = (widths >= heights)
+            vert = np.logical_not(horz)
+            horz_inds = np.where(horz)[0]
+            vert_inds = np.where(vert)[0]
+            inds = np.hstack((
+                np.random.permutation(horz_inds),
+                np.random.permutation(vert_inds)))
+            inds = np.reshape(inds, (-1, 2))
+            row_perm = np.random.permutation(np.arange(inds.shape[0]))
+            inds = np.reshape(inds[row_perm, :], (-1,))
+            self._perm = inds
+        else:
+            self._perm = np.random.permutation(np.arange(len(self._roidb)))
         self._cur = 0
 
     def _get_next_minibatch_inds(self):
@@ -73,35 +88,56 @@ class RoIDataLayer(caffe.Layer):
 
         self._num_classes = layer_params['num_classes']
 
-        self._name_to_top_map = {
-            'data': 0,
-            'rois': 1,
-            'labels': 2}
+        self._name_to_top_map = {}
 
         # data blob: holds a batch of N images, each with 3 channels
-        # The height and width (100 x 100) are dummy values
-        top[0].reshape(1, 3, 100, 100)
+        idx = 0
+        top[idx].reshape(cfg.TRAIN.IMS_PER_BATCH, 3,
+            max(cfg.TRAIN.SCALES), cfg.TRAIN.MAX_SIZE)
+        self._name_to_top_map['data'] = idx
+        idx += 1
 
-        # rois blob: holds R regions of interest, each is a 5-tuple
-        # (n, x1, y1, x2, y2) specifying an image batch index n and a
-        # rectangle (x1, y1, x2, y2)
-        top[1].reshape(1, 5)
+        if cfg.TRAIN.HAS_RPN:
+            top[idx].reshape(1, 3)
+            self._name_to_top_map['im_info'] = idx
+            idx += 1
 
-        # labels blob: R categorical labels in [0, ..., K] for K foreground
-        # classes plus background
-        top[2].reshape(1)
+            top[idx].reshape(1, 4)
+            self._name_to_top_map['gt_boxes'] = idx
+            idx += 1
+        else: # not using RPN
+            # rois blob: holds R regions of interest, each is a 5-tuple
+            # (n, x1, y1, x2, y2) specifying an image batch index n and a
+            # rectangle (x1, y1, x2, y2)
+            top[idx].reshape(1, 5)
+            self._name_to_top_map['rois'] = idx
+            idx += 1
 
-        if cfg.TRAIN.BBOX_REG:
-            self._name_to_top_map['bbox_targets'] = 3
-            self._name_to_top_map['bbox_loss_weights'] = 4
+            # labels blob: R categorical labels in [0, ..., K] for K foreground
+            # classes plus background
+            top[idx].reshape(1)
+            self._name_to_top_map['labels'] = idx
+            idx += 1
 
-            # bbox_targets blob: R bounding-box regression targets with 4
-            # targets per class
-            top[3].reshape(1, self._num_classes * 4)
+            if cfg.TRAIN.BBOX_REG:
+                # bbox_targets blob: R bounding-box regression targets with 4
+                # targets per class
+                top[idx].reshape(1, self._num_classes * 4)
+                self._name_to_top_map['bbox_targets'] = idx
+                idx += 1
 
-            # bbox_loss_weights blob: At most 4 targets per roi are active;
-            # thisbinary vector sepcifies the subset of active targets
-            top[4].reshape(1, self._num_classes * 4)
+                # bbox_inside_weights blob: At most 4 targets per roi are active;
+                # thisbinary vector sepcifies the subset of active targets
+                top[idx].reshape(1, self._num_classes * 4)
+                self._name_to_top_map['bbox_inside_weights'] = idx
+                idx += 1
+
+                top[idx].reshape(1, self._num_classes * 4)
+                self._name_to_top_map['bbox_outside_weights'] = idx
+                idx += 1
+
+        print 'RoiDataLayer: name_to_top:', self._name_to_top_map
+        assert len(top) == len(self._name_to_top_map)
 
     def forward(self, bottom, top):
         """Get blobs and copy them into this layer's top blob vector."""

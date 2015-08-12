@@ -28,10 +28,17 @@ class SolverWrapper(object):
         """Initialize the SolverWrapper."""
         self.output_dir = output_dir
 
-        print 'Computing bounding-box regression targets...'
-        self.bbox_means, self.bbox_stds = \
-                rdl_roidb.add_bbox_regression_targets(roidb)
-        print 'done'
+        if (cfg.TRAIN.HAS_RPN and cfg.TRAIN.BBOX_REG and
+            cfg.TRAIN.BBOX_NORMALIZE_TARGETS):
+            # RPN can only use precomputed normalization because there are no
+            # fixed statistics to compute a priori
+            assert cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED
+
+        if cfg.TRAIN.BBOX_REG:
+            print 'Computing bounding-box regression targets...'
+            self.bbox_means, self.bbox_stds = \
+                    rdl_roidb.add_bbox_regression_targets(roidb)
+            print 'done'
 
         self.solver = caffe.SGDSolver(solver_prototxt)
         if pretrained_model is not None:
@@ -51,7 +58,11 @@ class SolverWrapper(object):
         """
         net = self.solver.net
 
-        if cfg.TRAIN.BBOX_REG:
+        scale_bbox_params = (cfg.TRAIN.BBOX_REG and
+                             cfg.TRAIN.BBOX_NORMALIZE_TARGETS and
+                             net.params.has_key('bbox_pred'))
+
+        if scale_bbox_params:
             # save original values
             orig_0 = net.params['bbox_pred'][0].data.copy()
             orig_1 = net.params['bbox_pred'][1].data.copy()
@@ -76,15 +87,17 @@ class SolverWrapper(object):
         net.save(str(filename))
         print 'Wrote snapshot to: {:s}'.format(filename)
 
-        if cfg.TRAIN.BBOX_REG:
+        if scale_bbox_params:
             # restore net to original state
             net.params['bbox_pred'][0].data[...] = orig_0
             net.params['bbox_pred'][1].data[...] = orig_1
+        return filename
 
     def train_model(self, max_iters):
         """Network training loop."""
         last_snapshot_iter = -1
         timer = Timer()
+        model_paths = []
         while self.solver.iter < max_iters:
             # Make one SGD update
             timer.tic()
@@ -95,10 +108,11 @@ class SolverWrapper(object):
 
             if self.solver.iter % cfg.TRAIN.SNAPSHOT_ITERS == 0:
                 last_snapshot_iter = self.solver.iter
-                self.snapshot()
+                model_paths.append(self.snapshot())
 
         if last_snapshot_iter != self.solver.iter:
-            self.snapshot()
+            model_paths.append(self.snapshot())
+        return model_paths
 
 def get_training_roidb(imdb):
     """Returns a roidb (Region of Interest database) for use in training."""
@@ -120,5 +134,6 @@ def train_net(solver_prototxt, roidb, output_dir,
                        pretrained_model=pretrained_model)
 
     print 'Solving...'
-    sw.train_model(max_iters)
+    model_paths = sw.train_model(max_iters)
     print 'done solving'
+    return model_paths

@@ -1,18 +1,9 @@
 This directory holds (*after you download them*):
-- Pre-computed object proposals
 - Caffe models pre-trained on ImageNet
-- Fast R-CNN models
+- Faster R-CNN models
 - Symlinks to datasets
 
-To download precomputed Selective Search proposals for PASCAL VOC 2007 and 2012, run:
-
-```
-./data/scripts/fetch_selective_search_data.sh
-```
-
-This script will populate `data/selective_search_data`.
-
-To download Caffe models (CaffeNet, VGG_CNN_M_1024, VGG16) pre-trained on ImageNet, run:
+To download Caffe models (ZF, VGG16) pre-trained on ImageNet, run:
 
 ```
 ./data/scripts/fetch_imagenet_models.sh
@@ -20,13 +11,13 @@ To download Caffe models (CaffeNet, VGG_CNN_M_1024, VGG16) pre-trained on ImageN
 
 This script will populate `data/imagenet_models`.
 
-To download Fast R-CNN models trained on VOC 2007, run:
+To download Faster R-CNN models trained on VOC 2007, run:
 
 ```
-./data/scripts/fetch_fast_rcnn_models.sh
+./data/scripts/fetch_faster_rcnn_models.sh
 ```
 
-This script will populate `data/fast_rcnn_models`.
+This script will populate `data/faster_rcnn_models`.
 
 In order to train and test with PASCAL VOC, you will need to establish symlinks.
 From the `data` directory (`cd data`):
@@ -39,7 +30,7 @@ ln -s /your/path/to/VOC2007/VOCdevkit VOCdevkit2007
 ln -s /your/path/to/VOC2012/VOCdevkit VOCdevkit2012
 ```
 
-Since you'll likely be experimenting with multiple installs of Fast R-CNN in
+Since you'll likely be experimenting with multiple installs of Fast/er R-CNN in
 parallel, you'll probably want to keep all of this data in a shared place and
 use symlinks. On my system I create the following symlinks inside `data`:
 
@@ -51,6 +42,7 @@ ln -s /data/fast_rcnn_shared/cache
 ln -s /data/fast_rcnn_shared/imagenet_models
 
 # move the selective search data to a shared location and symlink to them
+# (only applicable to Fast R-CNN training)
 ln -s /data/fast_rcnn_shared/selective_search_data
 
 ln -s /data/VOC2007/VOCdevkit VOCdevkit2007
