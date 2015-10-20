@@ -248,8 +248,13 @@ class SVMClassTrainer(object):
             print(('    {:d}: obj val: {:.3f} = {:.3f} '
                    '(pos) + {:.3f} (neg) + {:.3f} (reg)').format(i, *losses))
 
-        return ((w * self.feature_scale, b * self.feature_scale),
-                pos_scores, neg_scores)
+        # Sanity check
+        scores_ret = (
+                X * 1.0 / self.feature_scale).dot(w.T * self.feature_scale) + b
+        assert np.allclose(scores, scores_ret[:, 0], atol=1e-5), \
+                "Scores from returned model don't match decision function"
+
+        return ((w * self.feature_scale, b), pos_scores, neg_scores)
 
     def append_neg_and_retrain(self, feat=None, force=False):
         if feat is not None:
