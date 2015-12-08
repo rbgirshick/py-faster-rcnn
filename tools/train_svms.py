@@ -343,7 +343,7 @@ if __name__ == '__main__':
     # enhance roidb to contain flipped examples
     if cfg.TRAIN.USE_FLIPPED:
         print 'Appending horizontally-flipped training examples...'
-        imdb.append_flipped_roidb()
+        imdb.append_flipped_images()
         print 'done'
 
     SVMTrainer(net, imdb).train()
