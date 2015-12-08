@@ -10,6 +10,7 @@ In particular, this Python port
  - is ~10% slower at test-time, because some operations execute on the CPU in Python layers (e.g., 220ms / image vs. 200ms / image for VGG16)
  - gives similar, but not exactly the same, mAP as the MATLAB version
  - is *not compatible* with models trained using the MATLAB code due to the minor implementation differences
+ - **includes approximate joint training** that is 1.5x faster than alternating optimization (for VGG16) -- see these [slides](https://www.dropbox.com/s/gpvbaf9o4et9d5v/iccv15_tutorial_training_faster.pdf?dl=0) for more information
 
 # *Faster* R-CNN: Towards Real-Time Object Detection with Region Proposal Networks
 
@@ -171,7 +172,7 @@ ZF was trained at MSRA.
 
 ### Usage
 
-To train and test a Faster R-CNN detector use `experiments/scripts/faster_rcnn_alt_opt.sh`.
+To train and test a Faster R-CNN detector using the **alternating optimization** algorithm from our NIPS 2015 paper, use `experiments/scripts/faster_rcnn_alt_opt.sh`.
 Output is written underneath `$FRCN_ROOT/output`.
 
 ```Shell
@@ -184,3 +185,17 @@ cd $FRCN_ROOT
 ```
 
 ("alt opt" refers to the alternating optimization training algorithm described in the NIPS paper.)
+
+To train and test a Faster R-CNN detector using the **approximate joint training** method, use `experiments/scripts/faster_rcnn_end2end.sh`.
+Output is written underneath `$FRCN_ROOT/output`.
+
+```Shell
+cd $FRCN_ROOT
+./experiments/scripts/faster_rcnn_end2end.sh [GPU_ID] [NET] [--set ...]
+# GPU_ID is the GPU you want to train on
+# NET in {ZF, VGG_CNN_M_1024, VGG16} is the network arch to use
+# --set ... allows you to specify fast_rcnn.config options, e.g.
+#   --set EXP_DIR seed_rng1701 RNG_SEED 1701
+```
+
+This method trains the RPN module jointly with the Fast R-CNN network, rather than alternating between training the two. It results in faster (~ 1.5x speedup) training times and similar detection accuracy. See these [slides](https://www.dropbox.com/s/gpvbaf9o4et9d5v/iccv15_tutorial_training_faster.pdf?dl=0) for more details.
