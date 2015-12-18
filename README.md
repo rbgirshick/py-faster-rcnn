@@ -10,7 +10,7 @@ In particular, this Python port
  - is ~10% slower at test-time, because some operations execute on the CPU in Python layers (e.g., 220ms / image vs. 200ms / image for VGG16)
  - gives similar, but not exactly the same, mAP as the MATLAB version
  - is *not compatible* with models trained using the MATLAB code due to the minor implementation differences
- - **includes approximate joint training** that is 1.5x faster than alternating optimization (for VGG16) -- see these [slides](https://www.dropbox.com/s/gpvbaf9o4et9d5v/iccv15_tutorial_training_faster.pdf?dl=0) for more information
+ - **includes approximate joint training** that is 1.5x faster than alternating optimization (for VGG16) -- see these [slides](https://www.dropbox.com/s/xtr4yd4i5e0vw8g/iccv15_tutorial_training_rbg.pdf?dl=0) for more information
 
 # *Faster* R-CNN: Towards Real-Time Object Detection with Region Proposal Networks
 
@@ -198,4 +198,4 @@ cd $FRCN_ROOT
 #   --set EXP_DIR seed_rng1701 RNG_SEED 1701
 ```
 
-This method trains the RPN module jointly with the Fast R-CNN network, rather than alternating between training the two. It results in faster (~ 1.5x speedup) training times and similar detection accuracy. See these [slides](https://www.dropbox.com/s/gpvbaf9o4et9d5v/iccv15_tutorial_training_faster.pdf?dl=0) for more details.
+This method trains the RPN module jointly with the Fast R-CNN network, rather than alternating between training the two. It results in faster (~ 1.5x speedup) training times and similar detection accuracy. See these [slides](https://www.dropbox.com/s/xtr4yd4i5e0vw8g/iccv15_tutorial_training_rbg.pdf?dl=0) for more details.
