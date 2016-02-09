@@ -71,7 +71,7 @@ def combined_roidb(imdb_names):
     if len(roidbs) > 1:
         for r in roidbs[1:]:
             roidb.extend(r)
-        imdb = datasets.imdb(imdb_names)
+        imdb = datasets.imdb.imdb(imdb_names)
     else:
         imdb = get_imdb(imdb_names)
     return imdb, roidb

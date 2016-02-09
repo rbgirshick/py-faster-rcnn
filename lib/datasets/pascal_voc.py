@@ -5,10 +5,8 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-import datasets
-import datasets.pascal_voc
 import os
-import datasets.imdb
+from datasets.imdb import imdb
 import xml.dom.minidom as minidom
 import numpy as np
 import scipy.sparse
@@ -16,10 +14,11 @@ import scipy.io as sio
 import utils.cython_bbox
 import cPickle
 import subprocess
+from fast_rcnn.config import cfg
 
-class pascal_voc(datasets.imdb):
+class pascal_voc(imdb):
     def __init__(self, image_set, year, devkit_path=None):
-        datasets.imdb.__init__(self, 'voc_' + year + '_' + image_set)
+        imdb.__init__(self, 'voc_' + year + '_' + image_set)
         self._year = year
         self._image_set = image_set
         self._devkit_path = self._get_default_path() if devkit_path is None \
@@ -83,7 +82,7 @@ class pascal_voc(datasets.imdb):
         """
         Return the default path where PASCAL VOC is expected to be installed.
         """
-        return os.path.join(datasets.ROOT_DIR, 'data', 'VOCdevkit' + self._year)
+        return os.path.join(cfg.DATA_DIR, 'VOCdevkit' + self._year)
 
     def gt_roidb(self):
         """
@@ -125,7 +124,7 @@ class pascal_voc(datasets.imdb):
         if int(self._year) == 2007 or self._image_set != 'test':
             gt_roidb = self.gt_roidb()
             ss_roidb = self._load_selective_search_roidb(gt_roidb)
-            roidb = datasets.imdb.merge_roidbs(gt_roidb, ss_roidb)
+            roidb = imdb.merge_roidbs(gt_roidb, ss_roidb)
         else:
             roidb = self._load_selective_search_roidb(None)
         with open(cache_file, 'wb') as fid:
@@ -138,7 +137,7 @@ class pascal_voc(datasets.imdb):
         if int(self._year) == 2007 or self._image_set != 'test':
             gt_roidb = self.gt_roidb()
             rpn_roidb = self._load_rpn_roidb(gt_roidb)
-            roidb = datasets.imdb.merge_roidbs(gt_roidb, rpn_roidb)
+            roidb = imdb.merge_roidbs(gt_roidb, rpn_roidb)
         else:
             roidb = self._load_rpn_roidb(None)
 
@@ -154,7 +153,7 @@ class pascal_voc(datasets.imdb):
         return self.create_roidb_from_box_list(box_list, gt_roidb)
 
     def _load_selective_search_roidb(self, gt_roidb):
-        filename = os.path.abspath(os.path.join(self.cache_path, '..',
+        filename = os.path.abspath(os.path.join(cfg.DATA_DIR,
                                                 'selective_search_data',
                                                 self.name + '.mat'))
         assert os.path.exists(filename), \
@@ -245,10 +244,10 @@ class pascal_voc(datasets.imdb):
     def _do_matlab_eval(self, comp_id, output_dir='output'):
         rm_results = self.config['cleanup']
 
-        path = os.path.join(os.path.dirname(__file__),
+        path = os.path.join(cfg.ROOT_DIR, 'lib', 'datasets',
                             'VOCdevkit-matlab-wrapper')
         cmd = 'cd {} && '.format(path)
-        cmd += '{:s} -nodisplay -nodesktop '.format(datasets.MATLAB)
+        cmd += '{:s} -nodisplay -nodesktop '.format(cfg.MATLAB)
         cmd += '-r "dbstop if error; '
         cmd += 'voc_eval(\'{:s}\',\'{:s}\',\'{:s}\',\'{:s}\',{:d}); quit;"' \
                .format(self._devkit_path, comp_id,
@@ -269,6 +268,7 @@ class pascal_voc(datasets.imdb):
             self.config['cleanup'] = True
 
 if __name__ == '__main__':
-    d = datasets.pascal_voc('trainval', '2007')
+    from datasets.pascal_voc import pascal_voc
+    d = pascal_voc('trainval', '2007')
     res = d.roidb
     from IPython import embed; embed()

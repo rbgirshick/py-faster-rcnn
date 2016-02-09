@@ -11,7 +11,7 @@ import PIL
 from utils.cython_bbox import bbox_overlaps
 import numpy as np
 import scipy.sparse
-import datasets
+from fast_rcnn.config import cfg
 
 class imdb(object):
     """Image database."""
@@ -69,7 +69,7 @@ class imdb(object):
 
     @property
     def cache_path(self):
-        cache_path = osp.abspath(osp.join(datasets.ROOT_DIR, 'data', 'cache'))
+        cache_path = osp.abspath(osp.join(cfg.DATA_DIR, 'cache'))
         if not os.path.exists(cache_path):
             os.makedirs(cache_path)
         return cache_path
