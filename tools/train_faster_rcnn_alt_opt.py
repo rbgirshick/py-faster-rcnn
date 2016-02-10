@@ -75,13 +75,13 @@ def get_solvers(net_name):
                [net_name, n, 'stage1_fast_rcnn_solver30k40k.pt'],
                [net_name, n, 'stage2_rpn_solver60k80k.pt'],
                [net_name, n, 'stage2_fast_rcnn_solver30k40k.pt']]
-    solvers = [os.path.join(cfg.ROOT_DIR, 'models', *s) for s in solvers]
+    solvers = [os.path.join(cfg.MODELS_DIR, *s) for s in solvers]
     # Iterations for each training stage
     max_iters = [80000, 40000, 80000, 40000]
     # max_iters = [100, 100, 100, 100]
     # Test prototxt for the RPN
     rpn_test_prototxt = os.path.join(
-        cfg.ROOT_DIR, 'models', net_name, n, 'rpn_test.pt')
+        cfg.MODELS_DIR, net_name, n, 'rpn_test.pt')
     return solvers, max_iters, rpn_test_prototxt
 
 # ------------------------------------------------------------------------------
