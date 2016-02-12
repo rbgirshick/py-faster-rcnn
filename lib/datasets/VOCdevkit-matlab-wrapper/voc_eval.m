@@ -1,11 +1,11 @@
-function res = voc_eval(path, comp_id, test_set, output_dir, rm_res)
+function res = voc_eval(path, comp_id, test_set, output_dir)
 
 VOCopts = get_voc_opts(path);
 VOCopts.testset = test_set;
 
 for i = 1:length(VOCopts.classes)
   cls = VOCopts.classes{i};
-  res(i) = voc_eval_cls(cls, VOCopts, comp_id, output_dir, rm_res);
+  res(i) = voc_eval_cls(cls, VOCopts, comp_id, output_dir);
 end
 
 fprintf('\n~~~~~~~~~~~~~~~~~~~~\n');
@@ -15,7 +15,7 @@ fprintf('%.1f\n', aps * 100);
 fprintf('%.1f\n', mean(aps) * 100);
 fprintf('~~~~~~~~~~~~~~~~~~~~\n');
 
-function res = voc_eval_cls(cls, VOCopts, comp_id, output_dir, rm_res)
+function res = voc_eval_cls(cls, VOCopts, comp_id, output_dir)
 
 test_set = VOCopts.testset;
 year = VOCopts.dataset(4:end);
@@ -52,9 +52,5 @@ res.ap_auc = ap_auc;
 
 save([output_dir '/' cls '_pr.mat'], ...
      'res', 'recall', 'prec', 'ap', 'ap_auc');
-
-if rm_res
-  delete(res_fn);
-end
 
 rmpath(fullfile(VOCopts.datadir, 'VOCcode'));
