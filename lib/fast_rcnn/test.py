@@ -230,7 +230,7 @@ def test_net(net, imdb):
     max_per_set = 40 * num_images
     # heuristic: keep at most 100 detection per class per image prior to NMS
     max_per_image = 100
-    # detection thresold for each class (this is adaptively set based on the
+    # detection threshold for each class (this is adaptively set based on the
     # max_per_set constraint)
     thresh = -np.inf * np.ones(imdb.num_classes)
     # top_scores will hold one minheap of scores per class (used to enforce
