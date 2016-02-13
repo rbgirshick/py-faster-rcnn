@@ -64,7 +64,8 @@ If you find Faster R-CNN useful in your research, please consider citing:
 ### Requirements: hardware
 
 1. For training smaller networks (ZF, VGG_CNN_M_1024) a good GPU (e.g., Titan, K20, K40, ...) with at least 3G of memory suffices
-2. For training with VGG16, you'll need a K40 (~11G of memory)
+2. For training Fast R-CNN with VGG16, you'll need a K40 (~11G of memory)
+3. For training the end-to-end version of Faster R-CNN with VGG16, 3G of GPU memory is sufficient (using CUDNN)
 
 ### Installation (sufficient for the demo)
 
