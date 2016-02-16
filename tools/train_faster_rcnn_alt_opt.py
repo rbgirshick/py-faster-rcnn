@@ -121,7 +121,7 @@ def train_rpn(queue=None, imdb_name=None, init_model=None, solver=None,
 
     roidb, imdb = get_roidb(imdb_name)
     print 'roidb len: {}'.format(len(roidb))
-    output_dir = get_output_dir(imdb, None)
+    output_dir = get_output_dir(imdb)
     print 'Output will be saved to `{:s}`'.format(output_dir)
 
     model_paths = train_net(solver, roidb, output_dir,
@@ -156,7 +156,7 @@ def rpn_generate(queue=None, imdb_name=None, rpn_model_path=None, cfg=None,
 
     # Load RPN and configure output directory
     rpn_net = caffe.Net(rpn_test_prototxt, rpn_model_path, caffe.TEST)
-    output_dir = get_output_dir(imdb, None)
+    output_dir = get_output_dir(imdb)
     print 'Output will be saved to `{:s}`'.format(output_dir)
     # Generate proposals on the imdb
     rpn_proposals = imdb_proposals(rpn_net, imdb)
@@ -187,7 +187,7 @@ def train_fast_rcnn(queue=None, imdb_name=None, init_model=None, solver=None,
     _init_caffe(cfg)
 
     roidb, imdb = get_roidb(imdb_name, rpn_file=rpn_file)
-    output_dir = get_output_dir(imdb, None)
+    output_dir = get_output_dir(imdb)
     print 'Output will be saved to `{:s}`'.format(output_dir)
     # Train Fast R-CNN
     model_paths = train_net(solver, roidb, output_dir,

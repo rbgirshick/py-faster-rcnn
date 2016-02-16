@@ -192,7 +192,9 @@ def voc_eval(detpath,
     fp = np.cumsum(fp)
     tp = np.cumsum(tp)
     rec = tp / float(npos)
-    prec = tp / (tp + fp)
+    # avoid divide by zero in case the first detection matches a difficult
+    # ground truth
+    prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
     ap = voc_ap(rec, prec, use_07_metric)
 
     return rec, prec, ap

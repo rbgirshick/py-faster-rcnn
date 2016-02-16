@@ -7,6 +7,7 @@
 
 import os
 from datasets.imdb import imdb
+import datasets.ds_utils as ds_utils
 import xml.etree.ElementTree as ET
 import numpy as np
 import scipy.sparse
@@ -43,10 +44,10 @@ class pascal_voc(imdb):
         # PASCAL specific config options
         self.config = {'cleanup'     : True,
                        'use_salt'    : True,
-                       'top_k'       : 2000,
                        'use_diff'    : False,
                        'matlab_eval' : False,
-                       'rpn_file'    : None}
+                       'rpn_file'    : None,
+                       'min_size'    : 2}
 
         assert os.path.exists(self._devkit_path), \
                 'VOCdevkit path does not exist: {}'.format(self._devkit_path)
@@ -167,7 +168,12 @@ class pascal_voc(imdb):
 
         box_list = []
         for i in xrange(raw_data.shape[0]):
-            box_list.append(raw_data[i][:, (1, 0, 3, 2)] - 1)
+            boxes = raw_data[i][:, (1, 0, 3, 2)] - 1
+            keep = ds_utils.unique_boxes(boxes)
+            boxes = boxes[keep, :]
+            keep = ds_utils.filter_small_boxes(boxes, self.config['min_size'])
+            boxes = boxes[keep, :]
+            box_list.append(boxes)
 
         return self.create_roidb_from_box_list(box_list, gt_roidb)
 
@@ -183,15 +189,17 @@ class pascal_voc(imdb):
             # Exclude the samples labeled as difficult
             non_diff_objs = [
                 obj for obj in objs if int(obj.find('difficult').text) == 0]
-            if len(non_diff_objs) != len(objs):
-                print 'Removed {} difficult objects'.format(
-                    len(objs) - len(non_diff_objs))
+            # if len(non_diff_objs) != len(objs):
+            #     print 'Removed {} difficult objects'.format(
+            #         len(objs) - len(non_diff_objs))
             objs = non_diff_objs
         num_objs = len(objs)
 
         boxes = np.zeros((num_objs, 4), dtype=np.uint16)
         gt_classes = np.zeros((num_objs), dtype=np.int32)
         overlaps = np.zeros((num_objs, self.num_classes), dtype=np.float32)
+        # "Seg" area for pascal is just the box area
+        seg_areas = np.zeros((num_objs), dtype=np.float32)
 
         # Load object bounding boxes into a data frame.
         for ix, obj in enumerate(objs):
@@ -205,13 +213,15 @@ class pascal_voc(imdb):
             boxes[ix, :] = [x1, y1, x2, y2]
             gt_classes[ix] = cls
             overlaps[ix, cls] = 1.0
+            seg_areas[ix] = (x2 - x1 + 1) * (y2 - y1 + 1)
 
         overlaps = scipy.sparse.csr_matrix(overlaps)
 
         return {'boxes' : boxes,
                 'gt_classes': gt_classes,
                 'gt_overlaps' : overlaps,
-                'flipped' : False}
+                'flipped' : False,
+                'seg_areas' : seg_areas}
 
     def _get_comp_id(self):
         comp_id = (self._comp_id + '_' + self._salt if self.config['use_salt']
@@ -248,11 +258,6 @@ class pascal_voc(imdb):
                                        dets[k, 2] + 1, dets[k, 3] + 1))
 
     def _do_python_eval(self, output_dir = 'output'):
-        print '--------------------------------------------------------------'
-        print 'Computing results with **unofficial** Python eval code.'
-        print 'Results should be very close to the official MATLAB eval code.'
-        print 'Recompute with `./tools/reval.py --matlab ...` for your paper.'
-        print '--------------------------------------------------------------'
         annopath = os.path.join(
             self._devkit_path,
             'VOC' + self._year,
@@ -289,6 +294,13 @@ class pascal_voc(imdb):
             print('{:.3f}'.format(ap))
         print('{:.3f}'.format(np.mean(aps)))
         print('~~~~~~~~')
+        print('')
+        print('--------------------------------------------------------------')
+        print('Results computed with the **unofficial** Python eval code.')
+        print('Results should be very close to the official MATLAB eval code.')
+        print('Recompute with `./tools/reval.py --matlab ...` for your paper.')
+        print('-- Thanks, The Management')
+        print('--------------------------------------------------------------')
 
     def _do_matlab_eval(self, output_dir='output'):
         print '-----------------------------------------------------'

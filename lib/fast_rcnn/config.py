@@ -193,7 +193,7 @@ __C.ROOT_DIR = osp.abspath(osp.join(osp.dirname(__file__), '..', '..'))
 __C.DATA_DIR = osp.abspath(osp.join(__C.ROOT_DIR, 'data'))
 
 # Model directory
-__C.MODELS_DIR = osp.abspath(osp.join(__C.ROOT_DIR, 'models'))
+__C.MODELS_DIR = osp.abspath(osp.join(__C.ROOT_DIR, 'models', 'pascal_voc'))
 
 # Name (or path to) the matlab executable
 __C.MATLAB = 'matlab'
@@ -208,17 +208,19 @@ __C.USE_GPU_NMS = True
 __C.GPU_ID = 0
 
 
-def get_output_dir(imdb, net):
+def get_output_dir(imdb, net=None):
     """Return the directory where experimental artifacts are placed.
+    If the directory does not exist, it is created.
 
     A canonical path is built using the name from an imdb and a network
     (if not None).
     """
-    path = osp.abspath(osp.join(__C.ROOT_DIR, 'output', __C.EXP_DIR, imdb.name))
-    if net is None:
-        return path
-    else:
-        return osp.join(path, net.name)
+    outdir = osp.abspath(osp.join(__C.ROOT_DIR, 'output', __C.EXP_DIR, imdb.name))
+    if net is not None:
+        outdir = osp.join(outdir, net.name)
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+    return outdir
 
 def _merge_a_into_b(a, b):
     """Merge config dictionary a into config dictionary b, clobbering the

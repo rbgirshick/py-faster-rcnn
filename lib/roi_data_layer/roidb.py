@@ -110,6 +110,9 @@ def _compute_targets(rois, overlaps, labels):
     """Compute bounding-box regression targets for an image."""
     # Indices of ground-truth ROIs
     gt_inds = np.where(overlaps == 1)[0]
+    if len(gt_inds) == 0:
+        # Bail if the image has no ground-truth ROIs
+        return np.zeros((rois.shape[0], 5), dtype=np.float32)
     # Indices of examples for which we try to make predictions
     ex_inds = np.where(overlaps >= cfg.TRAIN.BBOX_THRESH)[0]
 

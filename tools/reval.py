@@ -32,6 +32,8 @@ def parse_args():
                         action='store_true')
     parser.add_argument('--comp', dest='comp_mode', help='competition mode',
                         action='store_true')
+    parser.add_argument('--nms', dest='apply_nms', help='apply nms',
+                        action='store_true')
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -47,9 +49,11 @@ def from_dets(imdb_name, output_dir, args):
     with open(os.path.join(output_dir, 'detections.pkl'), 'rb') as f:
         dets = cPickle.load(f)
 
-    print 'Applying NMS to all detections'
-    cfg.USE_GPU_NMS = False # much faster than GPU NMS for small number of dets
-    nms_dets = apply_nms(dets, cfg.TEST.NMS)
+    if args.apply_nms:
+        print 'Applying NMS to all detections'
+        nms_dets = apply_nms(dets, cfg.TEST.NMS)
+    else:
+        nms_dets = dets
 
     print 'Evaluating detections'
     imdb.evaluate_detections(nms_dets, output_dir)
