@@ -15,7 +15,8 @@ import numpy as np
 
 def find_in_path(name, path):
     "Find a file in a search path"
-    #adapted fom http://code.activestate.com/recipes/52224-find-a-file-given-a-search-path/
+    # Adapted fom
+    # http://code.activestate.com/recipes/52224-find-a-file-given-a-search-path/
     for dir in path.split(os.pathsep):
         binpath = pjoin(dir, name)
         if os.path.exists(binpath):
@@ -128,8 +129,8 @@ ext_modules = [
         language='c++',
         runtime_library_dirs=[CUDA['lib64']],
         # this syntax is specific to this build system
-        # we're only going to use certain compiler args with nvcc and not with gcc
-        # the implementation of this trick is in customize_compiler() below
+        # we're only going to use certain compiler args with nvcc and not with
+        # gcc the implementation of this trick is in customize_compiler() below
         extra_compile_args={'gcc': ["-Wno-unused-function"],
                             'nvcc': ['-arch=sm_35',
                                      '--ptxas-options=-v',
@@ -137,7 +138,14 @@ ext_modules = [
                                      '--compiler-options',
                                      "'-fPIC'"]},
         include_dirs = [numpy_include, CUDA['include']]
-    )
+    ),
+    Extension(
+        'pycocotools._mask',
+        sources=['pycocotools/maskApi.c', 'pycocotools/_mask.pyx'],
+        include_dirs = [numpy_include, 'pycocotools'],
+        extra_compile_args={
+            'gcc': ['-Wno-cpp', '-Wno-unused-function', '-std=c99']},
+    ),
 ]
 
 setup(
