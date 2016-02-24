@@ -21,7 +21,7 @@ for year in ['2007', '2012']:
 
 # Set up coco_2014_<split>
 for year in ['2014']:
-    for split in ['train', 'val', 'minival']:
+    for split in ['train', 'val', 'minival', 'valminusminival']:
         name = 'coco_{}_{}'.format(year, split)
         __sets[name] = (lambda split=split, year=year: coco(split, year))
 

@@ -70,7 +70,10 @@ class coco(imdb):
         # Some image sets are "views" (i.e. subsets) into others.
         # For example, minival2014 is a random 5000 image subset of val2014.
         # This mapping tells us where the view's images and proposals come from.
-        self._view_map = {'minival2014' : 'val2014'}
+        self._view_map = {
+            'minival2014' : 'val2014',          # 5k val2014 subset
+            'valminusminival2014' : 'val2014',  # val2014 \setminus minival2014
+        }
         coco_name = image_set + year  # e.g., "val2014"
         self._data_name = (self._view_map[coco_name]
                            if self._view_map.has_key(coco_name)
@@ -228,14 +231,24 @@ class coco(imdb):
         handled by marking their overlaps (with all categories) to -1. This
         overlap value means that crowd "instances" are excluded from training.
         """
-        annIds = self._COCO.getAnnIds(imgIds=index, iscrowd=None)
-        objs = self._COCO.loadAnns(annIds)
-        objs = [obj for obj in objs if obj['area'] > 0]
-        num_objs = len(objs)
-
         im_ann = self._COCO.loadImgs(index)[0]
         width = im_ann['width']
         height = im_ann['height']
+
+        annIds = self._COCO.getAnnIds(imgIds=index, iscrowd=None)
+        objs = self._COCO.loadAnns(annIds)
+        # Sanitize bboxes -- some are invalid
+        valid_objs = []
+        for obj in objs:
+            x1 = np.max((0, obj['bbox'][0]))
+            y1 = np.max((0, obj['bbox'][1]))
+            x2 = np.min((width - 1, x1 + np.max((0, obj['bbox'][2] - 1))))
+            y2 = np.min((height - 1, y1 + np.max((0, obj['bbox'][3] - 1))))
+            if obj['area'] > 0 and x2 >= x1 and y2 >= y1:
+                obj['clean_bbox'] = [x1, y1, x2, y2]
+                valid_objs.append(obj)
+        objs = valid_objs
+        num_objs = len(objs)
 
         boxes = np.zeros((num_objs, 4), dtype=np.uint16)
         gt_classes = np.zeros((num_objs), dtype=np.int32)
@@ -249,12 +262,8 @@ class coco(imdb):
                                          for cls in self._classes[1:]])
 
         for ix, obj in enumerate(objs):
-            x1 = obj['bbox'][0]
-            y1 = obj['bbox'][1]
-            x2 = np.min((width - 1, x1 + np.max((0, obj['bbox'][2] - 1))))
-            y2 = np.min((height - 1, y1 + np.max((0, obj['bbox'][3] - 1))))
             cls = coco_cat_id_to_class_ind[obj['category_id']]
-            boxes[ix, :] = [x1, y1, x2, y2]
+            boxes[ix, :] = obj['clean_bbox']
             gt_classes[ix] = cls
             seg_areas[ix] = obj['area']
             if obj['iscrowd']:
