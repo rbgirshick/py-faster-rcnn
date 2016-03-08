@@ -44,6 +44,7 @@ layer {
 		alpha: 0.00005
 		beta: 0.75
 		norm_region: WITHIN_CHANNEL
+    engine: CAFFE
 	}
 }
 layer {
@@ -88,6 +89,7 @@ layer {
 		alpha: 0.00005
 		beta: 0.75
 		norm_region: WITHIN_CHANNEL
+    engine: CAFFE
 	}
 }
 layer {
