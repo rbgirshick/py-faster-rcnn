@@ -59,7 +59,7 @@ If you find Faster R-CNN useful in your research, please consider citing:
   USE_CUDNN := 1
   ```
 
-  You can download my [Makefile.config](http://www.cs.berkeley.edu/~rbg/fast-rcnn-data/Makefile.config) for reference.
+  You can download my [Makefile.config](https://dl.dropboxusercontent.com/s/6joa55k64xo2h68/Makefile.config?dl=0) for reference.
 2. Python packages you might not have: `cython`, `python-opencv`, `easydict`
 3. [Optional] MATLAB is required for **official** PASCAL VOC evaluation only. The code now includes unofficial Python evaluation code.
 

@@ -2,7 +2,7 @@
 
 ### COCO Faster R-CNN VGG-16 trained using end-to-end
 
-Model URL: www.cs.berkeley.edu/~rbg/faster-rcnn-data/coco_vgg16_faster_rcnn_final.caffemodel
+Model URL: https://dl.dropboxusercontent.com/s/cotx0y81zvbbhnt/coco_vgg16_faster_rcnn_final.caffemodel?dl=0
 
 Training command:
 ```
