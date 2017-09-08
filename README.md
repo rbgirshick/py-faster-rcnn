@@ -48,6 +48,8 @@ If you find Faster R-CNN useful in your research, please consider citing:
 
 ### Requirements: software
 
+**NOTE** If you are having issues compiling and you are using a recent version of CUDA/cuDNN, please consult [this issue](https://github.com/rbgirshick/py-faster-rcnn/issues/509?_pjax=%23js-repo-pjax-container#issuecomment-284133868) for a workaround
+
 1. Requirements for `Caffe` and `pycaffe` (see: [Caffe installation instructions](http://caffe.berkeleyvision.org/installation.html))
 
   **Note:** Caffe *must* be built with support for Python layers!
